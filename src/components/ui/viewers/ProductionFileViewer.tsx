@@ -550,7 +550,7 @@ const ProductionFileViewer: React.FC<ProductionFileViewerProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 z-[100] bg-background flex flex-col"
+      className="fixed inset-0 z-[200] bg-background flex flex-col"
       onMouseMove={isFullscreen ? resetControlsTimeout : undefined}
       onTouchStart={isFullscreen ? resetControlsTimeout : undefined}
     >
