@@ -252,6 +252,25 @@ const Index = () => {
       ],
       imagePlaceholder: 'tutors',
       images: [espaceTuteursImg]
+    },
+    {
+      id: 'virtual-classes',
+      icon: CalendarClock,
+      title: 'Classes Virtuelles',
+      subtitle: 'À venir',
+      description: 'Organisez des sessions de formation en ligne avec visioconférence intégrée. Partagez votre écran, interagissez en temps réel avec vos apprenants et enregistrez vos sessions pour les rendre accessibles ultérieurement.',
+      benefits: ['Visioconférence intégrée', 'Partage d\'écran', 'Enregistrement des sessions'],
+      details: [
+        'Création de classes virtuelles planifiées',
+        'Visioconférence HD avec audio/vidéo',
+        'Partage d\'écran et présentation',
+        'Chat en direct pendant les sessions',
+        'Enregistrement automatique',
+        'Supports pédagogiques partagés',
+        'Gestion des participants'
+      ],
+      imagePlaceholder: 'virtual-classes',
+      images: []
     }
   ];
 

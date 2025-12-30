@@ -4,7 +4,7 @@ import {
   LayoutDashboard, ShieldCheck, Users, GraduationCap, BookText, CalendarDays, 
   ClipboardCheck, Mail, UsersRound, Building2, UserCircle, Briefcase,
   ArrowRight, CheckCircle2, Sparkles, Smartphone, FileDown, QrCode, 
-  Upload, Bell, Search
+  Upload, Bell, Search, CalendarClock
 } from 'lucide-react';
 
 const Fonctionnalites = () => {
@@ -153,6 +153,19 @@ const Fonctionnalites = () => {
         'Communication',
         'Alertes absences'
       ]
+    },
+    {
+      icon: CalendarClock,
+      category: 'À venir',
+      title: 'Classes Virtuelles',
+      description: 'Sessions de formation en ligne avec visioconférence intégrée',
+      details: [
+        'Visioconférence HD',
+        'Partage d\'écran',
+        'Enregistrement sessions',
+        'Chat en direct'
+      ],
+      comingSoon: true
     }
   ];
 
@@ -256,7 +269,7 @@ const Fonctionnalites = () => {
       <section className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">12 Modules Principaux</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-4">13 Modules Principaux</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Une plateforme complète pour gérer tous les aspects de votre établissement
             </p>
@@ -265,14 +278,20 @@ const Fonctionnalites = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {mainFeatures.map((feature, index) => {
               const Icon = feature.icon;
+              const isComingSoon = 'comingSoon' in feature && feature.comingSoon;
               return (
                 <div 
                   key={index}
-                  className="p-6 bg-card rounded-xl border border-border hover:border-primary hover:shadow-lg transition-all group"
+                  className={`p-6 bg-card rounded-xl border border-border hover:border-primary hover:shadow-lg transition-all group relative ${isComingSoon ? 'opacity-80' : ''}`}
                 >
+                  {isComingSoon && (
+                    <div className="absolute top-3 right-3 px-2 py-1 bg-primary/20 text-primary text-xs font-semibold rounded-full">
+                      À venir
+                    </div>
+                  )}
                   <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center mr-4 shadow-lg group-hover:scale-110 transition-transform">
-                      <Icon className="h-6 w-6 text-primary-foreground" />
+                    <div className={`w-12 h-12 ${isComingSoon ? 'bg-muted' : 'bg-gradient-to-br from-primary to-accent'} rounded-lg flex items-center justify-center mr-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                      <Icon className={`h-6 w-6 ${isComingSoon ? 'text-muted-foreground' : 'text-primary-foreground'}`} />
                     </div>
                     <span className="text-xs font-semibold text-primary uppercase tracking-wide">
                       {feature.category}
@@ -283,7 +302,7 @@ const Fonctionnalites = () => {
                   <ul className="space-y-2">
                     {feature.details.map((detail, detailIndex) => (
                       <li key={detailIndex} className="flex items-start text-sm text-muted-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className={`h-4 w-4 ${isComingSoon ? 'text-muted-foreground' : 'text-green-500'} mr-2 mt-0.5 flex-shrink-0`} />
                         <span>{detail}</span>
                       </li>
                     ))}
