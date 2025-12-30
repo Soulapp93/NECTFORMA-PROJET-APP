@@ -95,7 +95,7 @@ const Solutions = () => {
         'Filtrage par formation et année',
         'Archivage des cahiers terminés'
       ],
-      images: [cahiersTextesImg]
+      images: [cahiersTextesImg, cahierTexteDetailImg]
     },
     {
       icon: CalendarDays,
@@ -109,7 +109,7 @@ const Solutions = () => {
         'Navigation par semaines de l\'année',
         'Création rapide de créneaux'
       ],
-      images: [emploisTempsImg, emploisTempsCalendrierImg, cahierTexteDetailImg]
+      images: [emploisTempsImg, emploisTempsCalendrierImg]
     },
     {
       icon: ClipboardCheck,
