@@ -620,45 +620,6 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Info */}
             <div className="space-y-8">
-              <div className="bg-card rounded-2xl p-8 border border-border shadow-lg">
-                <h3 className="text-2xl font-bold text-foreground mb-6">Nos coordonnées</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Mail className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">Email</h4>
-                      <a href="mailto:contact@nectfy.com" className="text-muted-foreground hover:text-primary transition-colors">
-                        contact@nectfy.com
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Phone className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">Téléphone</h4>
-                      <a href="tel:+33123456789" className="text-muted-foreground hover:text-primary transition-colors">
-                        +33 1 23 45 67 89
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                      <MapPin className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-foreground">Adresse</h4>
-                      <p className="text-muted-foreground">
-                        Paris, France
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl p-8 border border-primary/20">
                 <h3 className="text-xl font-bold text-foreground mb-4">Pourquoi nous contacter ?</h3>
                 <ul className="space-y-3">
