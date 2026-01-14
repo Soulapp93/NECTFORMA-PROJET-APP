@@ -89,7 +89,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Use verified Resend domain - fallback to resend.dev for testing if custom domain not verified
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "NECTFORMA <onboarding@resend.dev>";
     
-    console.log(`Sending activation email to ${email} from ${fromEmail}`);
+    console.log(`[send-user-activation] Sending activation email to ${email} from ${fromEmail}`);
+    console.log(`[send-user-activation] Activation link: ${activationLink}`);
     
     const emailResponse = await resend.emails.send({
       from: fromEmail,
@@ -154,7 +155,19 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Activation email sent successfully:", emailResponse);
+    // Check for Resend API errors
+    if (emailResponse.error) {
+      console.error("[send-user-activation] Resend API error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          error: "Erreur lors de l'envoi de l'email",
+          details: emailResponse.error.message 
+        }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("[send-user-activation] Activation email sent successfully:", emailResponse);
 
     // Update user to mark invitation sent
     await supabase
@@ -172,9 +185,12 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("Error in send-user-activation function:", error);
+    console.error("[send-user-activation] Critical error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Erreur interne du serveur" }),
+      JSON.stringify({ 
+        error: error.message || "Erreur interne du serveur",
+        stack: error.stack 
+      }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
