@@ -52,7 +52,18 @@ async function sendActivationEmail(user: User, establishmentId: string): Promise
   try {
     console.log(`Sending activation email to ${user.email}...`);
     
+    // Get current session for JWT token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      console.error('No session found - cannot send activation email');
+      return;
+    }
+    
     const { data, error } = await supabase.functions.invoke('send-user-activation', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: {
         userId: user.id,
         email: user.email,
@@ -66,6 +77,12 @@ async function sendActivationEmail(user: User, establishmentId: string): Promise
     if (error) {
       console.error('Error sending activation email:', error);
       throw error;
+    }
+    
+    // Check for application-level errors
+    if (data?.error) {
+      console.error('Activation email API error:', data.error);
+      throw new Error(data.error);
     }
 
     console.log('Activation email sent successfully:', data);

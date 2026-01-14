@@ -153,7 +153,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Use verified Resend domain - fallback to resend.dev for testing if custom domain not verified
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "NECTFORMA <onboarding@resend.dev>";
     
-    console.log(`Sending password reset email to ${email} from ${fromEmail}`);
+    console.log(`[send-password-reset] Sending password reset email to ${email} from ${fromEmail}`);
+    console.log(`[send-password-reset] Reset link generated successfully`);
     
     const emailResponse = await resend.emails.send({
       from: fromEmail,

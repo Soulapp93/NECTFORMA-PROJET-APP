@@ -144,7 +144,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Use verified Resend domain - fallback to resend.dev for testing if custom domain not verified
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "NECTFORMA <onboarding@resend.dev>";
     
-    console.log(`Sending invitation email to ${email} from ${fromEmail}`);
+    console.log(`[send-invitation] Sending invitation email to ${email} from ${fromEmail}`);
+    console.log(`[send-invitation] Invitation link: ${invitationLink}`);
     
     const emailResponse = await resend.emails.send({
       from: fromEmail,
