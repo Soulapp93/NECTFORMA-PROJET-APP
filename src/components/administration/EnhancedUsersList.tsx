@@ -208,29 +208,39 @@ const EnhancedUsersList: React.FC = () => {
 
       const redirectUrl = `${window.location.origin}/reset-password`;
 
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+      const response = await supabase.functions.invoke('send-password-reset', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: { email, redirectUrl },
       });
 
-      // Handle 409 - account not activated, need to resend invitation
-      if (error?.message?.includes('409') || (data as any)?.action === 'resend_invitation') {
+      const data = response.data;
+      const error = response.error;
+
+      // Handle 409 - account not activated, need to resend activation
+      // The edge function returns action: 'resend_invitation' in the response body
+      if (data?.action === 'resend_invitation' || data?.error === 'Compte non activé') {
         const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (user) {
-          toast.info("Ce compte n'est pas encore activé. Renvoi de l'invitation en cours...");
+        if (user && user.id) {
+          toast.info("Ce compte n'est pas encore activé. Envoi du lien d'activation...");
           try {
-            await invitationService.sendInvitation({
-              email: user.email,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              role: user.role as 'Admin' | 'Formateur' | 'Étudiant',
+            // Use send-user-activation edge function instead of invitation service
+            const activationResponse = await supabase.functions.invoke('send-user-activation', {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: { userId: user.id },
             });
-            toast.success(`Invitation envoyée à ${email}`);
-          } catch (inviteError: any) {
-            console.error("Erreur lors de l'envoi de l'invitation:", inviteError);
-            toast.error("Impossible d'envoyer l'invitation. Veuillez réessayer.");
+            
+            if (activationResponse.error || activationResponse.data?.error) {
+              throw new Error(activationResponse.data?.error || activationResponse.error?.message);
+            }
+            
+            toast.success(`Lien d'activation envoyé à ${email}`);
+          } catch (activationError: any) {
+            console.error("Erreur lors de l'envoi du lien d'activation:", activationError);
+            toast.error(activationError?.message || "Impossible d'envoyer le lien d'activation. Veuillez réessayer.");
           }
         } else {
           toast.error("Utilisateur non trouvé");
