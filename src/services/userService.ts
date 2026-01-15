@@ -47,17 +47,17 @@ async function getCurrentUserEstablishmentId(): Promise<string> {
   return userData.establishment_id;
 }
 
-// Send invitation via Resend edge function (reliable)
-async function sendResendInvitation(
+// Send invitation via edge function (Amazon SES pending)
+async function sendInvitation(
   email: string,
   firstName: string,
   lastName: string,
   role: string,
   establishmentId: string,
   createdBy: string
-): Promise<{ success: boolean; invitation_id?: string; error?: string }> {
+): Promise<{ success: boolean; invitation_id?: string; invitation_link?: string; error?: string }> {
   try {
-    console.log(`Envoi invitation Resend à ${email}...`);
+    console.log(`Création invitation pour ${email}...`);
     
     const { data, error } = await supabase.functions.invoke('send-invitation', {
       body: {
@@ -71,7 +71,7 @@ async function sendResendInvitation(
     });
 
     if (error) {
-      console.error('Erreur invitation Resend:', error);
+      console.error('Erreur invitation:', error);
       return { success: false, error: error.message };
     }
     
@@ -80,10 +80,14 @@ async function sendResendInvitation(
       return { success: false, error: data.error };
     }
 
-    console.log('✅ Invitation Resend envoyée:', data);
-    return { success: true, invitation_id: data.invitation_id };
+    console.log('✅ Invitation créée:', data);
+    return { 
+      success: true, 
+      invitation_id: data.invitation_id,
+      invitation_link: data.invitation_link
+    };
   } catch (error: any) {
-    console.error('Erreur lors de l\'invitation Resend:', error);
+    console.error('Erreur lors de la création de l\'invitation:', error);
     return { success: false, error: error.message };
   }
 }
@@ -181,10 +185,10 @@ export const userService = {
           .upsert(assignments, { onConflict: 'user_id,formation_id', ignoreDuplicates: true } as any);
       }
 
-      // Resend invitation via Resend if not activated
+      // Resend invitation if not activated (Amazon SES pending)
       if (!existingUser.is_activated) {
         const { data: { session } } = await supabase.auth.getSession();
-        await supabase.functions.invoke('send-invitation', {
+        const result = await supabase.functions.invoke('send-invitation', {
           body: { 
             email: normalizedEmail,
             first_name: existingUser.first_name,
@@ -194,6 +198,7 @@ export const userService = {
             created_by: session?.user?.id
           }
         });
+        console.log('Invitation renvoyée (email en attente Amazon SES):', result.data?.invitation_link);
       }
 
       return existingUser as User;
@@ -229,8 +234,8 @@ export const userService = {
       throw new Error(insertError.message);
     }
 
-    // Send invitation email via Resend
-    const inviteResult = await sendResendInvitation(
+    // Send invitation (Amazon SES pending - email disabled)
+    const inviteResult = await sendInvitation(
       normalizedEmail,
       userData.first_name,
       userData.last_name,
@@ -240,8 +245,10 @@ export const userService = {
     );
 
     if (!inviteResult.success) {
-      console.warn('Email invitation non envoyé:', inviteResult.error);
-      // Don't throw - user is created, just email failed
+      console.warn('Invitation non créée:', inviteResult.error);
+      // Don't throw - user is created, just invitation failed
+    } else if (inviteResult.invitation_link) {
+      console.log('🔗 Lien d\'invitation (copier manuellement):', inviteResult.invitation_link);
     }
 
     // Assign formations
@@ -390,8 +397,8 @@ export const userService = {
     return createdUsers;
   },
 
-  // Resend activation email via Resend
-  async resendActivationEmail(userId: string): Promise<void> {
+  // Resend invitation (Amazon SES pending)
+  async resendActivationEmail(userId: string): Promise<{ invitation_link?: string }> {
     const user = await this.getUserById(userId);
     const establishmentId = await getCurrentUserEstablishmentId();
     
@@ -420,6 +427,9 @@ export const userService = {
       throw new Error(data.error);
     }
 
-    console.log('✅ Invitation renvoyée via Resend');
+    console.log('✅ Invitation créée (email en attente Amazon SES)');
+    console.log('🔗 Lien d\'invitation:', data?.invitation_link);
+    
+    return { invitation_link: data?.invitation_link };
   }
 };
