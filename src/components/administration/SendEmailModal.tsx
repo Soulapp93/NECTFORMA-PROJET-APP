@@ -62,7 +62,13 @@ const SendEmailModal: React.FC<SendEmailModalProps> = ({
 
       if (error) throw error;
 
-      toast.success(`Email envoyé à ${recipients.length} destinataire(s)`);
+      // Check if emails are pending (Amazon SES integration)
+      if (data?.email_pending) {
+        toast.info(`Email préparé pour ${recipients.length} destinataire(s) (envoi en attente - Amazon SES)`);
+      } else {
+        toast.success(`Email envoyé à ${recipients.length} destinataire(s)`);
+      }
+      
       setSubject('');
       setMessage('');
       onClose();

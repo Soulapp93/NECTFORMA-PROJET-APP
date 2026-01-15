@@ -105,12 +105,13 @@ const SendMessageModal: React.FC<SendMessageModalProps> = ({
       });
 
       // Send email notification via Edge Function (only if not scheduled)
+      // Note: Amazon SES integration pending - emails are disabled
       if (!scheduleEnabled) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        const { error } = await supabase.functions.invoke('send-notification-email', {
+        const { data, error } = await supabase.functions.invoke('send-notification-email', {
           headers: session?.access_token
             ? { Authorization: `Bearer ${session.access_token}` }
             : undefined,
@@ -125,6 +126,11 @@ const SendMessageModal: React.FC<SendMessageModalProps> = ({
 
         if (error) {
           console.error('Error sending email notification:', error);
+        }
+        
+        // Check if emails are pending (Amazon SES)
+        if (data?.email_pending) {
+          console.log('Email notifications en attente (Amazon SES)');
         }
       }
 
