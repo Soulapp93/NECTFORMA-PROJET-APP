@@ -55,7 +55,7 @@ serve(async (req) => {
     // If user is not activated, resend invitation instead
     if (!userData.is_activated || userData.status === "pending") {
       // Use inviteUserByEmail to resend activation
-      const baseUrl = redirect_url || `${req.headers.get("origin") || "https://nectforme.lovable.app"}`;
+      const baseUrl = redirect_url || `${req.headers.get("origin") || "https://nectforma.com"}`;
       
       const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${baseUrl}/activation`,
@@ -84,7 +84,7 @@ serve(async (req) => {
     }
 
     // User is activated, send password reset via Supabase Auth
-    const baseUrl = redirect_url || `${req.headers.get("origin") || "https://nectforme.lovable.app"}`;
+    const baseUrl = redirect_url || `${req.headers.get("origin") || "https://nectforma.com"}`;
     
     const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo: `${baseUrl}/reset-password`,
