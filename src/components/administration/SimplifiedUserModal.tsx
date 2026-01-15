@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { User as UserType, CreateUserData } from '@/services/userService';
 import { Formation, formationService } from '@/services/formationService';
-import { activationService } from '@/services/activationService';
 import { tutorService, CreateTutorData } from '@/services/tutorService';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -203,24 +202,10 @@ const SimplifiedUserModal: React.FC<SimplifiedUserModalProps> = ({
         status: formData.status,
       }, selectedFormations, tutorInfo);
 
-      // Si c'est un nouvel utilisateur, créer un token d'activation et envoyer l'email
-      if (mode === 'create') {
-        try {
-          const token = await activationService.createActivationToken(newUser.id!);
-          await activationService.sendActivationEmail(
-            formData.email,
-            token.token,
-            formData.first_name,
-            formData.last_name
-          );
-          console.log('Email d\'activation envoyé avec succès');
-        } catch (emailError) {
-          console.error('Erreur lors de l\'envoi de l\'email d\'activation:', emailError);
-          // On continue même si l'email échoue
-        }
-      }
+      // L'invitation est maintenant envoyée automatiquement par userService.createUser
+      // via la fonction native Supabase Auth - pas besoin d'appel supplémentaire
 
-      toast.success(mode === 'create' ? 'Utilisateur créé' : 'Utilisateur mis à jour');
+      toast.success(mode === 'create' ? 'Utilisateur créé et invitation envoyée' : 'Utilisateur mis à jour');
       onClose();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
