@@ -15,21 +15,21 @@ const passwordSchema = z.string()
   .regex(/[a-z]/, "Le mot de passe doit contenir au moins une minuscule")
   .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre");
 
-interface ActivationDetails {
-  user_id: string;
+interface UserDetails {
+  id: string;
   email: string;
   first_name: string;
   last_name: string;
   role: string;
   establishment_name: string;
-  is_valid: boolean;
-  error_message: string | null;
 }
 
 const getRoleLabel = (role: string): string => {
   const labels: Record<string, string> = {
     'Admin': 'Administrateur',
     'AdminPrincipal': 'Administrateur Principal',
+    'Administrateur': 'Administrateur',
+    'Administrateur principal': 'Administrateur Principal',
     'Formateur': 'Formateur',
     'Étudiant': 'Étudiant',
   };
@@ -39,14 +39,14 @@ const getRoleLabel = (role: string): string => {
 export default function Activation() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-
+  
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [activation, setActivation] = useState<ActivationDetails | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isNativeFlow, setIsNativeFlow] = useState(false);
 
   const [formData, setFormData] = useState({
     password: '',
@@ -60,59 +60,150 @@ export default function Activation() {
   });
 
   useEffect(() => {
-    if (!token) {
-      setError("Token d'activation manquant");
-      setLoading(false);
-      return;
-    }
+    handleActivationFlow();
+  }, []);
 
-    validateToken();
-  }, [token]);
-
-  const validateToken = async () => {
+  const handleActivationFlow = async () => {
     try {
-      // Validate token by checking user_activation_tokens table
-      const { data: tokenData, error: tokenError } = await supabase
-        .from('user_activation_tokens')
-        .select(`
-          *,
-          users!inner(
-            id,
-            email,
-            first_name,
-            last_name,
-            role,
-            establishment_id,
-            establishments!inner(name)
-          )
-        `)
-        .eq('token', token)
-        .is('used_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      // Check URL hash for Supabase native token (from email link)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
 
-      if (tokenError || !tokenData) {
-        setError("Token d'activation invalide ou expiré");
-        return;
+      // Also check for old custom token flow (backwards compatibility)
+      const customToken = searchParams.get('token');
+
+      if (accessToken && refreshToken && type === 'invite') {
+        // Native Supabase invite flow
+        setIsNativeFlow(true);
+        await handleNativeInviteFlow(accessToken, refreshToken);
+      } else if (accessToken && refreshToken && type === 'magiclink') {
+        // Native Supabase magic link flow
+        setIsNativeFlow(true);
+        await handleNativeInviteFlow(accessToken, refreshToken);
+      } else if (customToken) {
+        // Legacy custom token flow
+        await handleLegacyTokenFlow(customToken);
+      } else {
+        // Check if there's a session from clicking the email link
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setIsNativeFlow(true);
+          await fetchUserDetails(session.user.id, session.user.email);
+        } else {
+          setError("Lien d'activation invalide ou expiré");
+        }
       }
-
-      const user = tokenData.users as any;
-      
-      setActivation({
-        user_id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        establishment_name: user.establishments?.name || 'NECTFORMA',
-        is_valid: true,
-        error_message: null
-      });
     } catch (err: any) {
-      setError("Erreur lors de la validation du token");
+      console.error("Erreur activation:", err);
+      setError("Erreur lors de la validation du lien d'activation");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNativeInviteFlow = async (accessToken: string, refreshToken: string) => {
+    try {
+      // Set the session from the tokens
+      const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError || !session?.user) {
+        console.error("Session error:", sessionError);
+        setError("Session invalide ou expirée");
+        return;
+      }
+
+      await fetchUserDetails(session.user.id, session.user.email);
+    } catch (err: any) {
+      console.error("Native flow error:", err);
+      setError("Erreur lors de la récupération de la session");
+    }
+  };
+
+  const fetchUserDetails = async (userId: string, email?: string | null) => {
+    // Try to get user from our users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        first_name,
+        last_name,
+        role,
+        establishment_id,
+        establishments!inner(name)
+      `)
+      .eq('id', userId)
+      .single();
+
+    if (userError || !userData) {
+      // User might not exist in our table yet, get from auth metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata) {
+        setUserDetails({
+          id: user.id,
+          email: user.email || email || '',
+          first_name: user.user_metadata.first_name || '',
+          last_name: user.user_metadata.last_name || '',
+          role: user.user_metadata.role || 'Étudiant',
+          establishment_name: 'NECTFORMA',
+        });
+      } else {
+        setError("Impossible de récupérer les informations utilisateur");
+      }
+      return;
+    }
+
+    setUserDetails({
+      id: userData.id,
+      email: userData.email,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      role: userData.role,
+      establishment_name: (userData.establishments as any)?.name || 'NECTFORMA',
+    });
+  };
+
+  const handleLegacyTokenFlow = async (token: string) => {
+    // Validate token by checking user_activation_tokens table
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('user_activation_tokens')
+      .select(`
+        *,
+        users!inner(
+          id,
+          email,
+          first_name,
+          last_name,
+          role,
+          establishment_id,
+          establishments!inner(name)
+        )
+      `)
+      .eq('token', token)
+      .is('used_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (tokenError || !tokenData) {
+      setError("Token d'activation invalide ou expiré");
+      return;
+    }
+
+    const user = tokenData.users as any;
+    
+    setUserDetails({
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+      establishment_name: user.establishments?.name || 'NECTFORMA',
+    });
   };
 
   const calculatePasswordStrength = (password: string) => {
@@ -162,29 +253,56 @@ export default function Activation() {
     setSubmitting(true);
 
     try {
-      const response = await supabase.functions.invoke('activate-user-account', {
-        body: {
-          token,
+      if (isNativeFlow) {
+        // Native Supabase flow - just update password
+        const { error: updateError } = await supabase.auth.updateUser({
           password: formData.password
+        });
+
+        if (updateError) {
+          throw new Error(updateError.message);
         }
-      });
 
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error);
+        // Mark user as activated in our table
+        if (userDetails?.id) {
+          await supabase
+            .from('users')
+            .update({ 
+              is_activated: true, 
+              status: 'Actif' 
+            })
+            .eq('id', userDetails.id);
+        }
 
-      toast.success("Compte activé avec succès !");
-
-      // Auto-login
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: activation!.email,
-        password: formData.password
-      });
-
-      if (signInError) {
-        toast.info("Veuillez vous connecter avec vos identifiants");
-        navigate('/auth');
-      } else {
+        toast.success("Compte activé avec succès !");
         navigate('/dashboard');
+      } else {
+        // Legacy custom token flow
+        const token = searchParams.get('token');
+        const response = await supabase.functions.invoke('activate-user-account', {
+          body: {
+            token,
+            password: formData.password
+          }
+        });
+
+        if (response.error) throw new Error(response.error.message);
+        if (response.data?.error) throw new Error(response.data.error);
+
+        toast.success("Compte activé avec succès !");
+
+        // Auto-login
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: userDetails!.email,
+          password: formData.password
+        });
+
+        if (signInError) {
+          toast.info("Veuillez vous connecter avec vos identifiants");
+          navigate('/auth');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de l'activation du compte");
@@ -247,7 +365,7 @@ export default function Activation() {
             </div>
             <CardTitle>Activez votre compte</CardTitle>
             <CardDescription>
-              Créez votre mot de passe pour accéder à votre espace {activation?.establishment_name}
+              Créez votre mot de passe pour accéder à votre espace {userDetails?.establishment_name}
             </CardDescription>
           </CardHeader>
 
@@ -260,7 +378,7 @@ export default function Activation() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Nom</p>
-                  <p className="font-medium">{activation?.first_name} {activation?.last_name}</p>
+                  <p className="font-medium">{userDetails?.first_name} {userDetails?.last_name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -269,7 +387,7 @@ export default function Activation() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Établissement</p>
-                  <p className="font-medium">{activation?.establishment_name}</p>
+                  <p className="font-medium">{userDetails?.establishment_name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -278,7 +396,7 @@ export default function Activation() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Rôle</p>
-                  <p className="font-medium">{getRoleLabel(activation?.role || '')}</p>
+                  <p className="font-medium">{getRoleLabel(userDetails?.role || '')}</p>
                 </div>
               </div>
             </div>
@@ -289,7 +407,7 @@ export default function Activation() {
                 <Input
                   id="email"
                   type="email"
-                  value={activation?.email || ''}
+                  value={userDetails?.email || ''}
                   disabled
                   className="bg-muted"
                 />

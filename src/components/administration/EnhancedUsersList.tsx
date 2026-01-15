@@ -284,31 +284,27 @@ const EnhancedUsersList: React.FC = () => {
         return null;
       };
 
-      const response = await supabase.functions.invoke('send-password-reset', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+      // Use new native reset-password function
+      const response = await supabase.functions.invoke('reset-password-native', {
+        body: { 
+          email, 
+          redirect_url: window.location.origin 
         },
-        body: { email, redirectUrl },
       });
 
       const data = response.data;
       const error = response.error;
 
-      // Handle 409 - account not activated, need to resend activation
-      const notActivatedPayload = await parseNotActivatedPayload(error, data);
-      const isNotActivated = notActivatedPayload?.action === 'resend_invitation';
-
-      if (isNotActivated) {
-        await sendActivationLink(email, session.access_token);
+      // Handle account not activated - invitation will be resent automatically
+      if (data?.action === 'resend_invitation') {
+        toast.success(`Compte non activé - Nouveau lien d'activation envoyé à ${email}`);
         return;
       }
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // si la fonction renvoie une erreur applicative dans le body
-      if ((data as any)?.error) throw new Error((data as any).error);
-
-      toast.success(`Lien de réinitialisation NECTFY envoyé à ${email}`);
+      toast.success(`Lien de réinitialisation envoyé à ${email}`);
     } catch (error: any) {
       console.error("Erreur lors de l'envoi du lien:", error);
 
