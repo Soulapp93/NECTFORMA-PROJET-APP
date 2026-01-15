@@ -6,9 +6,6 @@ verify_jwt = false
 [functions.check-expired-attendance-links]
 verify_jwt = false
 
-[functions.check-expired-attendance-links.schedule]
-cron = "*/5 * * * *"
-
 [functions.create-establishment]
 verify_jwt = false
 
