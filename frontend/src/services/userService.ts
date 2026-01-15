@@ -199,17 +199,22 @@ export const userService = {
       // Resend invitation if not activated (Amazon SES pending)
       if (!existingUser.is_activated) {
         const { data: { session } } = await supabase.auth.getSession();
-        const result = await supabase.functions.invoke('send-invitation', {
-          body: { 
-            email: normalizedEmail,
-            first_name: existingUser.first_name,
-            last_name: existingUser.last_name,
-            role: existingUser.role,
-            establishment_id: establishmentId,
-            created_by: session?.user?.id
-          }
-        });
-        console.log('Invitation renvoyée (email en attente Amazon SES):', result.data?.invitation_link);
+        if (session?.access_token) {
+          const result = await supabase.functions.invoke('send-invitation', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: { 
+              email: normalizedEmail,
+              first_name: existingUser.first_name,
+              last_name: existingUser.last_name,
+              role: existingUser.role,
+              establishment_id: establishmentId,
+              created_by: session?.user?.id
+            }
+          });
+          console.log('Invitation renvoyée:', result.data?.invitation_link);
+        }
       }
 
       return existingUser as User;
