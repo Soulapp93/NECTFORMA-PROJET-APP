@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentUser } from './useCurrentUser';
 
@@ -24,7 +24,7 @@ export const useTutorFormations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTutorFormations = async () => {
+  const fetchTutorFormations = useCallback(async () => {
     if (!userId || userRole !== 'Tuteur') {
       setFormations([]);
       return;
@@ -34,31 +34,39 @@ export const useTutorFormations = () => {
       setLoading(true);
       setError(null);
       
-      // 1. Récupérer les étudiants assignés au tuteur
-      const { data: studentAssignments, error: assignmentError } = await supabase
-        .from('tutor_student_assignments')
-        .select(`
-          student_id,
-          users!tutor_student_assignments_student_id_fkey(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+      console.log('🔍 Fetching tutor formations for userId:', userId);
+      
+      // Utiliser la vue tutor_students_view qui a déjà les données pré-jointes
+      // et ne dépend pas des RLS policies complexes
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('tutor_students_view')
+        .select('*')
         .eq('tutor_id', userId)
-        .eq('is_active', true);
+        .eq('assignment_active', true);
       
-      if (assignmentError) throw assignmentError;
+      if (studentsError) {
+        console.error('❌ Error fetching tutor students:', studentsError);
+        throw studentsError;
+      }
       
-      if (!studentAssignments || studentAssignments.length === 0) {
+      console.log('📋 Students data from view:', studentsData);
+      
+      if (!studentsData || studentsData.length === 0) {
+        console.log('ℹ️ No students found for this tutor');
         setFormations([]);
         return;
       }
       
-      const studentIds = studentAssignments.map(sa => sa.student_id);
+      // Récupérer les IDs des étudiants
+      const studentIds = [...new Set(studentsData.map(s => s.student_id).filter(Boolean))];
+      console.log('👥 Student IDs:', studentIds);
       
-      // 2. Récupérer les formations de ces étudiants via user_formation_assignments
+      if (studentIds.length === 0) {
+        setFormations([]);
+        return;
+      }
+      
+      // Récupérer les formations des étudiants via user_formation_assignments
       const { data: formationAssignments, error: formationError } = await supabase
         .from('user_formation_assignments')
         .select(`
@@ -78,17 +86,21 @@ export const useTutorFormations = () => {
         `)
         .in('user_id', studentIds);
       
-      if (formationError) throw formationError;
+      if (formationError) {
+        console.error('❌ Error fetching formation assignments:', formationError);
+        throw formationError;
+      }
 
-      // 3. Combiner les données
+      console.log('📚 Formation assignments:', formationAssignments);
+
+      // Combiner les données
       const enrichedData: TutorFormation[] = [];
       
       formationAssignments?.forEach(fa => {
-        const studentAssignment = studentAssignments.find(sa => sa.student_id === fa.user_id);
-        const student = studentAssignment?.users as any;
+        const studentData = studentsData.find(s => s.student_id === fa.user_id);
         const formation = fa.formations as any;
         
-        if (student && formation) {
+        if (studentData && formation) {
           enrichedData.push({
             formation_id: formation.id,
             formation_title: formation.title,
@@ -100,28 +112,29 @@ export const useTutorFormations = () => {
             formation_duration: formation.duration,
             modules_count: formation.formation_modules?.length || 0,
             student_id: fa.user_id,
-            student_first_name: student.first_name,
-            student_last_name: student.last_name,
-            student_email: student.email
+            student_first_name: studentData.student_first_name || '',
+            student_last_name: studentData.student_last_name || '',
+            student_email: studentData.student_email || ''
           });
         }
       });
 
+      console.log('✅ Enriched formations data:', enrichedData);
       setFormations(enrichedData);
     } catch (err) {
-      console.error('Erreur lors du chargement des formations tuteur:', err);
+      console.error('❌ Erreur lors du chargement des formations tuteur:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement des formations');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, userRole]);
 
   useEffect(() => {
     fetchTutorFormations();
-  }, [userId, userRole]);
+  }, [fetchTutorFormations]);
 
   // Récupérer les formations uniques
-  const getUniqueFormations = () => {
+  const getUniqueFormations = useCallback(() => {
     const uniqueFormations = new Map();
     formations.forEach(formation => {
       if (!uniqueFormations.has(formation.formation_id)) {
@@ -138,7 +151,7 @@ export const useTutorFormations = () => {
       });
     });
     return Array.from(uniqueFormations.values());
-  };
+  }, [formations]);
 
   return {
     formations,
