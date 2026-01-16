@@ -36,36 +36,54 @@ export const useTutorFormations = () => {
       
       console.log('🔍 Fetching tutor formations for userId:', userId);
       
-      // Utiliser la vue tutor_students_view qui a déjà les données pré-jointes
-      // et ne dépend pas des RLS policies complexes
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('tutor_students_view')
-        .select('*')
+      // Récupérer les apprentis du tuteur via la table d’assignation (autorisé côté RLS)
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('tutor_student_assignments')
+        .select(
+          `
+          student_id,
+          users:student_id(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `
+        )
         .eq('tutor_id', userId)
-        .eq('assignment_active', true);
-      
-      if (studentsError) {
-        console.error('❌ Error fetching tutor students:', studentsError);
-        throw studentsError;
+        .eq('is_active', true);
+
+      if (assignmentsError) {
+        console.error('❌ Error fetching tutor students assignments:', assignmentsError);
+        throw assignmentsError;
       }
-      
-      console.log('📋 Students data from view:', studentsData);
-      
-      if (!studentsData || studentsData.length === 0) {
+
+      const studentsData = (assignments ?? [])
+        .map((a: any) => ({
+          student_id: a.student_id,
+          student_first_name: a.users?.first_name ?? '',
+          student_last_name: a.users?.last_name ?? '',
+          student_email: a.users?.email ?? '',
+        }))
+        .filter((s: any) => Boolean(s.student_id));
+
+      console.log('📋 Students data from tutor_student_assignments:', studentsData);
+
+      if (studentsData.length === 0) {
         console.log('ℹ️ No students found for this tutor');
         setFormations([]);
         return;
       }
-      
+
       // Récupérer les IDs des étudiants
-      const studentIds = [...new Set(studentsData.map(s => s.student_id).filter(Boolean))];
+      const studentIds = [...new Set(studentsData.map((s: any) => s.student_id))];
       console.log('👥 Student IDs:', studentIds);
-      
+
       if (studentIds.length === 0) {
         setFormations([]);
         return;
       }
-      
+
       // Récupérer les formations des étudiants via user_formation_assignments
       const { data: formationAssignments, error: formationError } = await supabase
         .from('user_formation_assignments')
