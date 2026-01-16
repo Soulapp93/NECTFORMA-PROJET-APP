@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,24 +30,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate required fields
     if (!email || !token || !firstName) {
+      console.error("send-activation-email: Missing required fields");
       return new Response(
         JSON.stringify({ error: "Champs requis manquants" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get Elastic Email configuration
-    const elasticApiKey = Deno.env.get("ELASTIC_EMAIL_API_KEY");
-    const fromEmail = Deno.env.get("ELASTIC_EMAIL_FROM") || "noreply@nectforme.com";
-    const fromName = Deno.env.get("ELASTIC_EMAIL_FROM_NAME") || "NectForMe";
+    // Get Resend configuration
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
 
-    if (!elasticApiKey) {
-      console.error("send-activation-email: ELASTIC_EMAIL_API_KEY not configured");
+    if (!resendApiKey) {
+      console.error("send-activation-email: RESEND_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Configuration email manquante" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const resend = new Resend(resendApiKey);
 
     // Build activation URL
     const activationUrl = `https://nectforme.lovable.app/activation?token=${token}`;
@@ -100,58 +103,33 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const textContent = `
-Bonjour ${displayName} !
+    console.log("send-activation-email: Sending via Resend to:", email);
 
-Votre compte a été créé avec succès. Pour l'activer et définir votre mot de passe, cliquez sur le lien ci-dessous :
-
-${activationUrl}
-
-Ce lien expirera dans 24 heures. Si vous n'avez pas demandé la création de ce compte, veuillez contacter l'administrateur de votre établissement.
-
-© 2024 NectForMe. Tous droits réservés.
-    `;
-
-    // Send email via Elastic Email API v2
-    const formData = new URLSearchParams();
-    formData.append("apikey", elasticApiKey);
-    formData.append("subject", "Activez votre compte NectForMe");
-    formData.append("from", fromEmail);
-    formData.append("fromName", fromName);
-    formData.append("to", email);
-    formData.append("bodyHtml", htmlContent);
-    formData.append("bodyText", textContent);
-    formData.append("isTransactional", "true");
-
-    console.log("send-activation-email: Sending via Elastic Email to:", email);
-
-    const response = await fetch("https://api.elasticemail.com/v2/email/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData.toString(),
+    // Send email via Resend
+    const emailResponse = await resend.emails.send({
+      from: `NectForMe <${fromEmail}>`,
+      to: [email],
+      subject: "Activez votre compte NectForMe",
+      html: htmlContent,
     });
 
-    const result = await response.json();
+    console.log("send-activation-email: Resend response:", emailResponse);
 
-    console.log("send-activation-email: Elastic Email response:", result);
-
-    if (!result.success) {
-      console.error("send-activation-email: Elastic Email error:", result.error);
+    if (emailResponse.error) {
+      console.error("send-activation-email: Resend error:", emailResponse.error);
       return new Response(
-        JSON.stringify({ error: result.error || "Erreur lors de l'envoi de l'email" }),
+        JSON.stringify({ error: emailResponse.error.message || "Erreur lors de l'envoi de l'email" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("send-activation-email: Email sent successfully, messageID:", result.data?.messageid);
+    console.log("send-activation-email: Email sent successfully, id:", emailResponse.data?.id);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: "Email d'activation envoyé avec succès",
-        messageId: result.data?.messageid
+        messageId: emailResponse.data?.id
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
