@@ -47,103 +47,70 @@ async function getCurrentUserEstablishmentId(): Promise<string> {
   return userData.establishment_id;
 }
 
-// Send invitation via edge function (Amazon SES pending)
-async function sendInvitation(
+// Send activation email via Elastic Email
+async function sendActivationEmail(
+  userId: string,
   email: string,
   firstName: string,
-  lastName: string,
-  role: string,
-  establishmentId: string,
-  createdBy: string
-): Promise<{ success: boolean; invitation_id?: string; invitation_link?: string; error?: string }> {
+  lastName: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`Création invitation pour ${email}...`);
+    console.log(`Création token d'activation pour ${email}...`);
     
     // Get session for JWT authentication
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session?.access_token) {
-      console.error('Session non trouvée pour l\'envoi d\'invitation');
+      console.error('Session non trouvée pour l\'envoi d\'email');
       return { success: false, error: 'Session non trouvée' };
     }
     
-    const { data, error } = await supabase.functions.invoke('send-invitation', {
+    // Create activation token
+    const token = crypto.randomUUID() + '-' + Date.now();
+    
+    const { error: tokenError } = await supabase
+      .from('user_activation_tokens')
+      .insert([{
+        user_id: userId,
+        token: token
+      }]);
+
+    if (tokenError) {
+      console.error('Erreur création token:', tokenError);
+      return { success: false, error: tokenError.message };
+    }
+
+    // Send activation email via Elastic Email
+    const { data, error } = await supabase.functions.invoke('send-activation-email', {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
       },
       body: {
         email,
-        first_name: firstName,
-        last_name: lastName,
-        role,
-        establishment_id: establishmentId,
-        created_by: createdBy
+        token,
+        firstName,
+        lastName
       }
     });
 
     if (error) {
-      console.error('Erreur invitation:', error);
+      console.error('Erreur envoi email:', error);
       return { success: false, error: error.message };
     }
     
     if (data?.error) {
-      console.error('Erreur API invitation:', data.error);
+      console.error('Erreur API email:', data.error);
       return { success: false, error: data.error };
     }
 
-    console.log('✅ Invitation créée:', data);
-    return { 
-      success: true, 
-      invitation_id: data.invitation_id,
-      invitation_link: data.invitation_link
-    };
+    console.log('✅ Email d\'activation envoyé:', data);
+    return { success: true };
   } catch (error: any) {
-    console.error('Erreur lors de la création de l\'invitation:', error);
+    console.error('Erreur lors de l\'envoi de l\'email d\'activation:', error);
     return { success: false, error: error.message };
   }
 }
 
-// Legacy: send activation email (fallback for existing users)
-async function sendLegacyActivationEmail(user: User, establishmentId: string): Promise<void> {
-  try {
-    console.log(`Sending legacy activation email to ${user.email}...`);
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.access_token) {
-      console.error('No session found - cannot send activation email');
-      return;
-    }
-    
-    const { data, error } = await supabase.functions.invoke('send-user-activation', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: {
-        userId: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        role: user.role,
-        establishmentId: establishmentId
-      }
-    });
-
-    if (error) {
-      console.error('Error sending activation email:', error);
-      throw error;
-    }
-    
-    if (data?.error) {
-      console.error('Activation email API error:', data.error);
-      throw new Error(data.error);
-    }
-
-    console.log('Legacy activation email sent successfully:', data);
-  } catch (error) {
-    console.error('Failed to send activation email:', error);
-  }
-}
 
 export const userService = {
   async getUsers(): Promise<User[]> {
@@ -196,25 +163,15 @@ export const userService = {
           .upsert(assignments, { onConflict: 'user_id,formation_id', ignoreDuplicates: true } as any);
       }
 
-      // Resend invitation if not activated (Amazon SES pending)
+      // Resend activation email if not activated
       if (!existingUser.is_activated) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const result = await supabase.functions.invoke('send-invitation', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: { 
-              email: normalizedEmail,
-              first_name: existingUser.first_name,
-              last_name: existingUser.last_name,
-              role: existingUser.role,
-              establishment_id: establishmentId,
-              created_by: session?.user?.id
-            }
-          });
-          console.log('Invitation renvoyée:', result.data?.invitation_link);
-        }
+        await sendActivationEmail(
+          existingUser.id,
+          normalizedEmail,
+          existingUser.first_name,
+          existingUser.last_name
+        );
+        console.log('Email d\'activation renvoyé pour:', normalizedEmail);
       }
 
       return existingUser as User;
@@ -250,21 +207,19 @@ export const userService = {
       throw new Error(insertError.message);
     }
 
-    // Send invitation (Amazon SES pending - email disabled)
-    const inviteResult = await sendInvitation(
+    // Send activation email via Elastic Email
+    const emailResult = await sendActivationEmail(
+      newUser.id,
       normalizedEmail,
       userData.first_name,
-      userData.last_name,
-      userData.role,
-      establishmentId,
-      createdBy
+      userData.last_name
     );
 
-    if (!inviteResult.success) {
-      console.warn('Invitation non créée:', inviteResult.error);
-      // Don't throw - user is created, just invitation failed
-    } else if (inviteResult.invitation_link) {
-      console.log('🔗 Lien d\'invitation (copier manuellement):', inviteResult.invitation_link);
+    if (!emailResult.success) {
+      console.warn('Email d\'activation non envoyé:', emailResult.error);
+      // Don't throw - user is created, just email failed
+    } else {
+      console.log('✅ Email d\'activation envoyé à:', normalizedEmail);
     }
 
     // Assign formations
@@ -413,42 +368,22 @@ export const userService = {
     return createdUsers;
   },
 
-  // Resend invitation (Amazon SES pending)
-  async resendActivationEmail(userId: string): Promise<{ invitation_link?: string }> {
+  // Resend activation email
+  async resendActivationEmail(userId: string): Promise<{ success: boolean }> {
     const user = await this.getUserById(userId);
-    const establishmentId = await getCurrentUserEstablishmentId();
     
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user?.id || !session.access_token) {
-      throw new Error('Session non trouvée');
+    const result = await sendActivationEmail(
+      user.id,
+      user.email,
+      user.first_name,
+      user.last_name
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Erreur lors de l\'envoi de l\'email');
     }
 
-    const { data, error } = await supabase.functions.invoke('send-invitation', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: {
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        establishment_id: establishmentId,
-        created_by: session.user.id
-      }
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (data?.error) {
-      throw new Error(data.error);
-    }
-
-    console.log('✅ Invitation créée');
-    console.log('🔗 Lien d\'invitation:', data?.invitation_link);
-    
-    return { invitation_link: data?.invitation_link };
+    console.log('✅ Email d\'activation renvoyé à:', user.email);
+    return { success: true };
   }
 };
