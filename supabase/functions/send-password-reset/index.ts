@@ -43,12 +43,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Check if user exists in the users table
-    const { data: user, error: userError } = await supabaseAdmin
+    // Check if user exists in the users table (get most recent if multiple)
+    const { data: users, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, first_name, last_name, is_activated, establishment_id')
       .eq('email', normalizedEmail)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
     if (userError) {
       console.error("send-password-reset: Error fetching user:", userError);
@@ -57,6 +58,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const user = users && users.length > 0 ? users[0] : null;
 
     if (!user) {
       console.log("send-password-reset: User not found:", normalizedEmail);
