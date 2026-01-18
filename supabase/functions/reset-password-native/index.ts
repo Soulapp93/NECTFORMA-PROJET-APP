@@ -74,12 +74,15 @@ serve(async (req) => {
       authUserError: authUserError?.message 
     });
 
+    const statusRaw = (userData.status || "").toString();
+    const isPendingStatus = ["pending", "en attente", "En attente"].includes(statusRaw) || statusRaw.toLowerCase() === "en attente";
+
     // If user is not activated, resend invitation instead
-    if (!userData.is_activated || userData.status === "pending") {
-      console.log(`📨 User not activated, sending invitation instead`);
-      
+    if (!userData.is_activated || isPendingStatus) {
+      console.log(`📨 User not activated, sending invitation instead`, { is_activated: userData.is_activated, status: userData.status });
+
       const baseUrl = redirect_url || `${req.headers.get("origin") || "https://nectforme.lovable.app"}`;
-      
+
       const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${baseUrl}/activation`,
       });
@@ -89,7 +92,7 @@ serve(async (req) => {
       if (inviteError) {
         console.error("❌ Erreur renvoi invitation:", inviteError);
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             action: "resend_invitation",
             error: "Compte non activé",
             message: "Un nouveau lien d'activation a été envoyé"
@@ -100,7 +103,7 @@ serve(async (req) => {
 
       console.log(`✅ Invitation sent successfully for non-activated user`);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           action: "resend_invitation",
           success: true,
           message: "Compte non activé - Un nouveau lien d'activation a été envoyé"

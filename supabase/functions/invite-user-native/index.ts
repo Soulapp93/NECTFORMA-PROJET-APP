@@ -31,9 +31,12 @@ serve(async (req) => {
       },
     });
 
+    console.log("[invite-user-native] 📩 Request received");
+
     // Verify the requesting user is authenticated and has admin rights
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.warn("[invite-user-native] ❌ Missing Authorization header");
       return new Response(
         JSON.stringify({ error: "Non autorisé" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -42,8 +45,9 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (authError || !requestingUser) {
+      console.warn("[invite-user-native] ❌ Invalid token", { authError: authError?.message });
       return new Response(
         JSON.stringify({ error: "Token invalide" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -58,19 +62,30 @@ serve(async (req) => {
       .single();
 
     if (userDataError || !requestingUserData) {
+      console.warn("[invite-user-native] ❌ Requesting user not found in public.users", { userDataError: userDataError?.message });
       return new Response(
         JSON.stringify({ error: "Utilisateur non trouvé" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const adminRoles = new Set([
+      "Admin",
+      "AdminPrincipal",
+      "Administrateur",
+      "Administrateur principal",
+    ]);
+
     // Only admins can invite users
-    if (!["Administrateur", "Administrateur principal"].includes(requestingUserData.role)) {
+    if (!adminRoles.has(requestingUserData.role)) {
+      console.warn("[invite-user-native] ❌ Insufficient rights", { role: requestingUserData.role });
       return new Response(
         JSON.stringify({ error: "Droits insuffisants" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("[invite-user-native] ✅ Authorized", { requesterId: requestingUser.id, role: requestingUserData.role });
 
     const body: InviteUserRequest = await req.json();
     const { email, first_name, last_name, role, establishment_id, redirect_url } = body;
