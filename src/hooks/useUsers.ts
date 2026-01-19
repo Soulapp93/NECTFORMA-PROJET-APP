@@ -34,10 +34,10 @@ export const useUsers = () => {
     }
   };
 
-  const updateUser = async (id: string, userData: Partial<CreateUserData>, formationIds?: string[]) => {
+  const updateUser = async (id: string, userData: Partial<CreateUserData>, formationIds?: string[], tutorData?: any) => {
     try {
       setLoading(true);
-      const updatedUser = await userService.updateUser(id, userData, formationIds);
+      const updatedUser = await userService.updateUser(id, userData, formationIds, tutorData);
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       return updatedUser;
     } catch (err) {

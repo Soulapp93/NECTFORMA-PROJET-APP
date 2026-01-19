@@ -26,7 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const EnhancedUsersList: React.FC = () => {
   const { users, loading, error, createUser, updateUser, deleteUser, bulkCreateUsers, getUserFormations: getUserFormationsFromHook, refetch } = useUsers();
-  const { getUserTutors } = useUserTutors();
+  const { getUserTutors, refetch: refetchUserTutors } = useUserTutors();
   const userIds = useMemo(() => users.map((u) => u.id).filter(Boolean), [users]);
   const { getUserFormations, refetch: refetchFormations } = useAllUserFormations(userIds);
   const [searchTerm, setSearchTerm] = useState('');
@@ -95,11 +95,13 @@ const EnhancedUsersList: React.FC = () => {
       // garantir la synchro de la table (et des relations)
       await refetch();
       await refetchFormations();
+      await refetchUserTutors();
       return created;
     } else if (selectedUser) {
-      const updated = await updateUser(selectedUser.id!, userData, formationIds);
+      const updated = await updateUser(selectedUser.id!, userData, formationIds, tutorData);
       await refetch();
       await refetchFormations();
+      await refetchUserTutors();
       return updated;
     }
     throw new Error('Mode invalide');

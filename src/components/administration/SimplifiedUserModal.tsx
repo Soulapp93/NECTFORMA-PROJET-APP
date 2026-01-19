@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SimplifiedUserModalProps {
   isOpen: boolean;
@@ -90,6 +91,42 @@ const SimplifiedUserModal: React.FC<SimplifiedUserModalProps> = ({
           } else {
             setSelectedFormations([]);
           }
+
+          // Charger le tuteur existant pour les étudiants
+          if (user.role === 'Étudiant') {
+            try {
+              const { data: tutorAssignments } = await supabase
+                .from('tutor_students_view')
+                .select('*')
+                .eq('student_id', user.id)
+                .eq('is_active', true)
+                .limit(1);
+
+              if (tutorAssignments && tutorAssignments.length > 0) {
+                const existingTutor = tutorAssignments[0];
+                setTutorData({
+                  first_name: existingTutor.tutor_first_name || '',
+                  last_name: existingTutor.tutor_last_name || '',
+                  email: existingTutor.tutor_email || '',
+                  phone: '',
+                  company_name: existingTutor.company_name || '',
+                  company_address: '',
+                  position: existingTutor.position || '',
+                  contract_type: existingTutor.contract_type || '',
+                  contract_start_date: existingTutor.contract_start_date || '',
+                  contract_end_date: existingTutor.contract_end_date || ''
+                });
+                setShowTutorSection(true);
+              } else {
+                resetTutorData();
+              }
+            } catch (error) {
+              console.error('Erreur lors du chargement du tuteur:', error);
+              resetTutorData();
+            }
+          } else {
+            resetTutorData();
+          }
         } else {
           setFormData({
             first_name: '',
@@ -99,23 +136,27 @@ const SimplifiedUserModal: React.FC<SimplifiedUserModalProps> = ({
             status: 'Actif'
           });
           setSelectedFormations([]);
+          resetTutorData();
         }
         
-        setTutorData({
-          first_name: '',
-          last_name: '',
-          email: '',
-          phone: '',
-          company_name: '',
-          company_address: '',
-          position: '',
-          contract_type: '',
-          contract_start_date: '',
-          contract_end_date: ''
-        });
-        setShowTutorSection(false);
         setErrors({});
       }
+    };
+
+    const resetTutorData = () => {
+      setTutorData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        company_name: '',
+        company_address: '',
+        position: '',
+        contract_type: '',
+        contract_start_date: '',
+        contract_end_date: ''
+      });
+      setShowTutorSection(false);
     };
     
     initModal();
