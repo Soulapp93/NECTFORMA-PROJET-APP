@@ -28,11 +28,27 @@ interface TutorInfo {
 }
 
 const UserDetailModal: React.FC<UserDetailModalProps> = ({ isOpen, onClose, user }) => {
-  const { getUserFormations } = useAllUserFormations(user?.id ? [user.id] : []);
-  const { getUserTutors } = useUserTutors();
-  const { getTutorStudents } = useTutorStudents();
+  const { getUserFormations, refetch: refetchFormations } = useAllUserFormations(user?.id ? [user.id] : []);
+  const { getUserTutors, refetch: refetchUserTutors } = useUserTutors();
+  const { getTutorStudents, refetch: refetchTutorStudents } = useTutorStudents();
   const [tutorInfo, setTutorInfo] = useState<TutorInfo | null>(null);
   const [loadingTutor, setLoadingTutor] = useState(false);
+
+  // Rafraîchir toutes les données à l'ouverture de la modal
+  useEffect(() => {
+    const refreshAllData = async () => {
+      if (isOpen && user) {
+        // Rafraîchir les formations, tuteurs et étudiants
+        await Promise.all([
+          refetchFormations(),
+          refetchUserTutors(),
+          refetchTutorStudents()
+        ]);
+      }
+    };
+
+    refreshAllData();
+  }, [isOpen, user?.id, refetchFormations, refetchUserTutors, refetchTutorStudents]);
 
   // Charger les infos du tuteur (vérifie via email dans la table tutors)
   useEffect(() => {

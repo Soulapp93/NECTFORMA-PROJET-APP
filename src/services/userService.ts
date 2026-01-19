@@ -281,7 +281,7 @@ export const userService = {
     return newUser;
   },
 
-  async updateUser(id: string, userData: Partial<CreateUserData>, formationIds?: string[]): Promise<User> {
+  async updateUser(id: string, userData: Partial<CreateUserData>, formationIds?: string[], tutorData?: any): Promise<User> {
     const { data, error } = await supabase
       .from('users')
       .update(userData)
@@ -308,6 +308,107 @@ export const userService = {
           .insert(assignments);
 
         if (assignmentError) throw assignmentError;
+      }
+    }
+
+    // Handle tutor data for students
+    if (tutorData && data.role === 'Étudiant') {
+      try {
+        const establishmentId = await getCurrentUserEstablishmentId();
+        
+        // Check if tutor with this email already exists
+        const { data: existingTutor } = await supabase
+          .from('tutors')
+          .select('id')
+          .eq('email', tutorData.email.toLowerCase())
+          .eq('establishment_id', establishmentId)
+          .maybeSingle();
+
+        let tutorId: string;
+
+        if (existingTutor) {
+          // Update existing tutor
+          const { data: updatedTutor, error: tutorUpdateError } = await supabase
+            .from('tutors')
+            .update({
+              first_name: tutorData.first_name,
+              last_name: tutorData.last_name,
+              phone: tutorData.phone,
+              company_name: tutorData.company_name,
+              company_address: tutorData.company_address,
+              position: tutorData.position,
+            })
+            .eq('id', existingTutor.id)
+            .select()
+            .single();
+
+          if (tutorUpdateError) throw tutorUpdateError;
+          tutorId = existingTutor.id;
+        } else {
+          // Create new tutor
+          const tutorCreateData = {
+            first_name: tutorData.first_name,
+            last_name: tutorData.last_name,
+            email: tutorData.email.toLowerCase(),
+            phone: tutorData.phone,
+            company_name: tutorData.company_name,
+            company_address: tutorData.company_address,
+            position: tutorData.position,
+            establishment_id: establishmentId
+          };
+
+          const { data: newTutor, error: tutorError } = await supabase
+            .from('tutors')
+            .insert([tutorCreateData])
+            .select()
+            .single();
+
+          if (tutorError) throw tutorError;
+          tutorId = newTutor.id;
+        }
+
+        // Check if assignment already exists
+        const { data: existingAssignment } = await supabase
+          .from('tutor_student_assignments')
+          .select('id')
+          .eq('student_id', id)
+          .eq('tutor_id', tutorId)
+          .maybeSingle();
+
+        if (existingAssignment) {
+          // Update existing assignment
+          await supabase
+            .from('tutor_student_assignments')
+            .update({
+              contract_type: tutorData.contract_type,
+              contract_start_date: tutorData.contract_start_date,
+              contract_end_date: tutorData.contract_end_date,
+              is_active: true
+            })
+            .eq('id', existingAssignment.id);
+        } else {
+          // Deactivate any existing assignments for this student
+          await supabase
+            .from('tutor_student_assignments')
+            .update({ is_active: false })
+            .eq('student_id', id);
+
+          // Create new assignment
+          const assignmentData = {
+            tutor_id: tutorId,
+            student_id: id,
+            contract_type: tutorData.contract_type,
+            contract_start_date: tutorData.contract_start_date,
+            contract_end_date: tutorData.contract_end_date,
+            is_active: true
+          };
+
+          await supabase
+            .from('tutor_student_assignments')
+            .insert([assignmentData]);
+        }
+      } catch (tutorError) {
+        console.error('Erreur lors de la gestion du tuteur:', tutorError);
       }
     }
 
