@@ -225,12 +225,33 @@ const Sidebar = () => {
                 <p className="text-sm font-semibold text-white truncate">{userDisplayInfo.name}</p>
                 <p className="text-xs text-white/70">{userDisplayInfo.role}</p>
                 {userDisplayInfo.relationInfo && (
-                  <p className="text-xs text-white/60 mt-0.5 truncate flex items-center gap-1">
-                    {userDisplayInfo.relationInfo.type === 'tutor' 
-                      ? <>👨‍🏫 Tuteur : {userDisplayInfo.relationInfo.name}</>
-                      : <>👨‍🎓 Apprenti : {userDisplayInfo.relationInfo.name}</>
-                    }
-                  </p>
+                  <div className="mt-1.5 p-2 rounded-lg bg-white/5 border border-white/10">
+                    {userDisplayInfo.relationInfo.type === 'tutor' ? (
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-white/80 font-medium flex items-center gap-1.5">
+                          <span className="text-sm">👨‍🏫</span> Mon Tuteur
+                        </p>
+                        <p className="text-xs text-white font-semibold truncate pl-5">
+                          {userDisplayInfo.relationInfo.name}
+                        </p>
+                        {userDisplayInfo.relationInfo.company && (
+                          <p className="text-xs text-white/60 truncate pl-5 flex items-center gap-1">
+                            <Building2 className="w-3 h-3 flex-shrink-0" />
+                            {userDisplayInfo.relationInfo.company}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-white/80 font-medium flex items-center gap-1.5">
+                          <span className="text-sm">👨‍🎓</span> Mon Apprenti
+                        </p>
+                        <p className="text-xs text-white font-semibold truncate pl-5">
+                          {userDisplayInfo.relationInfo.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
