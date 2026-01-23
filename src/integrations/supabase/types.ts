@@ -59,13 +59,6 @@ export type Database = {
             foreignKeyName: "assignment_corrections_corrected_by_fkey"
             columns: ["corrected_by"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "assignment_corrections_corrected_by_fkey"
-            columns: ["corrected_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -150,13 +143,6 @@ export type Database = {
             foreignKeyName: "assignment_submissions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "assignment_submissions_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -200,13 +186,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "attendance_sheets"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_audit_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "attendance_audit_log_user_id_fkey"
@@ -302,20 +281,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_attendance_sheets_formation"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
-          {
-            foreignKeyName: "fk_attendance_sheets_instructor"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
             foreignKeyName: "fk_attendance_sheets_instructor"
             columns: ["instructor_id"]
             isOneToOne: false
@@ -383,13 +348,6 @@ export type Database = {
             foreignKeyName: "fk_attendance_signatures_user"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "fk_attendance_signatures_user"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -427,13 +385,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chat_groups"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_group_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "chat_group_members_user_id_fkey"
@@ -489,13 +440,6 @@ export type Database = {
             foreignKeyName: "chat_groups_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "chat_groups_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -512,13 +456,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "formations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_groups_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
           },
         ]
       }
@@ -613,13 +550,6 @@ export type Database = {
             foreignKeyName: "chat_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "chat_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -660,13 +590,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "digital_safe_files"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "digital_safe_file_permissions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "digital_safe_file_permissions_user_id_fkey"
@@ -972,13 +895,6 @@ export type Database = {
             referencedRelation: "formations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "formation_modules_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
         ]
       }
       formations: {
@@ -1087,13 +1003,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "invitations_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
           {
             foreignKeyName: "invitations_created_by_fkey"
             columns: ["created_by"]
@@ -1285,13 +1194,6 @@ export type Database = {
             foreignKeyName: "module_assignments_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "module_assignments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1425,13 +1327,6 @@ export type Database = {
             foreignKeyName: "module_instructors_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "module_instructors_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1555,13 +1450,6 @@ export type Database = {
             foreignKeyName: "schedule_slots_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "schedule_slots_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1620,13 +1508,6 @@ export type Database = {
             referencedRelation: "formations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "schedules_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
         ]
       }
       student_formations: {
@@ -1655,20 +1536,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "formations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_formations_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
-          {
-            foreignKeyName: "student_formations_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_formations_student_id_fkey"
@@ -1841,13 +1708,6 @@ export type Database = {
             referencedRelation: "formations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "text_books_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
         ]
       }
       tutor_student_assignments: {
@@ -1882,13 +1742,6 @@ export type Database = {
           tutor_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "tutor_student_assignments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
           {
             foreignKeyName: "tutor_student_assignments_student_id_fkey"
             columns: ["student_id"]
@@ -1990,13 +1843,6 @@ export type Database = {
             foreignKeyName: "user_activation_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "user_activation_tokens_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2028,20 +1874,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "formations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_formation_assignments_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
-          {
-            foreignKeyName: "user_formation_assignments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "user_formation_assignments_user_id_fkey"
@@ -2177,13 +2009,6 @@ export type Database = {
             foreignKeyName: "virtual_class_materials_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "virtual_class_materials_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2225,13 +2050,6 @@ export type Database = {
           virtual_class_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "virtual_class_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
           {
             foreignKeyName: "virtual_class_participants_user_id_fkey"
             columns: ["user_id"]
@@ -2320,13 +2138,6 @@ export type Database = {
             foreignKeyName: "virtual_classes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "virtual_classes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -2343,20 +2154,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "formations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "virtual_classes_formation_id_fkey"
-            columns: ["formation_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["formation_id"]
-          },
-          {
-            foreignKeyName: "virtual_classes_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "tutor_students_view"
-            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "virtual_classes_instructor_id_fkey"
@@ -2378,11 +2175,12 @@ export type Database = {
     Views: {
       tutor_students_view: {
         Row: {
+          assignment_active: boolean | null
+          assignment_id: string | null
           company_name: string | null
           contract_end_date: string | null
           contract_start_date: string | null
           contract_type: string | null
-          establishment_id: string | null
           formation_id: string | null
           formation_level: string | null
           formation_title: string | null
@@ -2394,11 +2192,27 @@ export type Database = {
           student_id: string | null
           student_last_name: string | null
           tutor_email: string | null
+          tutor_establishment_id: string | null
           tutor_first_name: string | null
           tutor_id: string | null
           tutor_last_name: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_formations_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_student_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
