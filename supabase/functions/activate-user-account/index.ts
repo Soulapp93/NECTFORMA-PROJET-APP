@@ -11,6 +11,25 @@ interface ActivateAccountRequest {
   password: string;
 }
 
+const findAuthUserIdByEmail = async (supabase: ReturnType<typeof createClient>, email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const perPage = 1000;
+  const maxPages = 25; // hard safety limit
+
+  for (let page = 1; page <= maxPages; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const users = data?.users ?? [];
+    const found = users.find((u) => (u.email ?? '').toLowerCase() === normalizedEmail);
+    if (found?.id) return found.id;
+
+    if (users.length < perPage) break;
+  }
+
+  return null;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,15 +43,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     const { token, password }: ActivateAccountRequest = await req.json();
 
-    console.log("Processing account activation for token:", token.substring(0, 8) + "...");
-
-    // Validate required fields
     if (!token || !password) {
       return new Response(
         JSON.stringify({ error: "Token et mot de passe requis" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    console.log("Processing account activation for token:", token.substring(0, 8) + "...");
 
     // Validate password strength
     if (password.length < 8) {
@@ -60,131 +78,80 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const user = tokenData.users;
-    const userId = tokenData.user_id;
+    const userId = tokenData.user_id as string;
 
-    console.log("Activating account for user:", user.email);
+    console.log("Activating account for user:", user.email, "userId:", userId);
 
-    // Check if auth user already exists
-    let authUserId: string | null = null;
-    
-    const { data: { users: existingUsers } } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000
-    });
-    
-    const existingAuthUser = existingUsers?.find(u => u.email === user.email);
-    
-    if (existingAuthUser) {
-      // Update password for existing user
-      const { error: updateError } = await supabase.auth.admin.updateUserById(
-        existingAuthUser.id,
-        { password, email_confirm: true }
-      );
-      
+    // Find Auth user reliably (pagination safe)
+    const existingAuthUserId = await findAuthUserIdByEmail(supabase, user.email);
+    let authUserId: string | null = existingAuthUserId;
+
+    if (authUserId) {
+      const { error: updateError } = await supabase.auth.admin.updateUserById(authUserId, {
+        password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          establishment_id: user.establishment_id,
+        },
+      });
+
       if (updateError) {
-        console.error("Error updating existing user:", updateError);
+        console.error("Error updating auth user:", updateError);
         return new Response(
           JSON.stringify({ error: "Erreur lors de la mise à jour du compte" }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      authUserId = existingAuthUser.id;
     } else {
-      // Create new auth user
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      // Fallback: if Auth user doesn't exist, create it
+      const { data: createdAuth, error: createError } = await supabase.auth.admin.createUser({
         email: user.email,
         password,
         email_confirm: true,
         user_metadata: {
           first_name: user.first_name,
-          last_name: user.last_name
-        }
+          last_name: user.last_name,
+          role: user.role,
+          establishment_id: user.establishment_id,
+        },
       });
 
-      if (createError) {
+      if (createError || !createdAuth?.user?.id) {
         console.error("Error creating auth user:", createError);
         return new Response(
-          JSON.stringify({ error: "Erreur lors de la création du compte: " + createError.message }),
+          JSON.stringify({ error: "Erreur lors de la création du compte: " + (createError?.message || "inconnue") }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      authUserId = newUser.user.id;
+
+      authUserId = createdAuth.user.id;
     }
 
     if (!authUserId) {
       return new Response(
-        JSON.stringify({ error: "Erreur lors de la création du compte utilisateur" }),
+        JSON.stringify({ error: "Erreur lors de la création/mise à jour du compte utilisateur" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Update user profile: set is_activated, status, and link to auth user if needed
+    // Update public profile row (do NOT attempt to change the primary key id)
     const { error: updateUserError } = await supabase
-      .from('users')
+      .from("users")
       .update({
-        id: authUserId, // Link to auth user ID
         is_activated: true,
-        status: 'Actif'
+        status: "Actif",
       })
-      .eq('id', userId);
+      .eq("id", userId);
 
     if (updateUserError) {
-      console.error("Error updating user profile:", updateUserError);
-      // Try alternative approach - if user ID doesn't match, create proper link
-      // This handles the case where user was created with a different ID than auth user
-    }
-
-    // If userId is different from authUserId, we need to handle this
-    if (userId !== authUserId) {
-      // Delete old profile and create new one with correct ID
-      const { data: oldUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (oldUser) {
-        // Check if auth user profile exists
-        const { data: existingAuthProfile } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', authUserId)
-          .single();
-
-        if (!existingAuthProfile) {
-          // Create new profile with auth user ID
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: authUserId,
-              email: oldUser.email,
-              first_name: oldUser.first_name,
-              last_name: oldUser.last_name,
-              role: oldUser.role,
-              establishment_id: oldUser.establishment_id,
-              phone: oldUser.phone,
-              is_activated: true,
-              status: 'Actif'
-            });
-
-          if (!insertError) {
-            // Delete old profile
-            await supabase
-              .from('users')
-              .delete()
-              .eq('id', userId);
-          }
-        } else {
-          // Just update existing auth profile
-          await supabase
-            .from('users')
-            .update({
-              is_activated: true,
-              status: 'Actif'
-            })
-            .eq('id', authUserId);
-        }
-      }
+      console.error("Error updating public.users activation flags:", updateUserError);
+      return new Response(
+        JSON.stringify({ error: "Erreur lors de la mise à jour du profil utilisateur" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     // Mark token as used
