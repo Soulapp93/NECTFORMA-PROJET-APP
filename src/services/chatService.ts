@@ -82,77 +82,25 @@ export interface ChatMessageAttachment {
   created_at: string;
 }
 
-// Type helper for database operations
-const db = supabase as any;
-
 export const chatService = {
   // Get all groups for current user
+  // NOTE: Tables chat_groups and chat_group_members don't exist yet
+  // Return empty array until tables are created
   async getUserGroups(): Promise<ChatGroup[]> {
-    const userId = await getCurrentUserId();
-    console.log('✅ Getting groups for user:', userId);
-
-    // First, get the group IDs the user is a member of
-    const { data: memberData, error: memberError } = await db
-      .from('chat_group_members')
-      .select('group_id')
-      .eq('user_id', userId);
-
-    if (memberError) {
-      console.error('❌ Error fetching memberships:', memberError);
-      throw memberError;
-    }
-
-    console.log('✅ User memberships:', memberData);
-
-    if (!memberData || memberData.length === 0) {
-      console.log('⚠️ No group memberships found');
-      return [];
-    }
-
-    const groupIds = memberData.map((m: any) => m.group_id);
-
-    // Then fetch the groups
-    const { data, error } = await db
-      .from('chat_groups')
-      .select('*')
-      .in('id', groupIds)
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      console.error('❌ Error fetching groups:', error);
-      throw error;
-    }
-
-    console.log('✅ Groups fetched:', data);
-    return (data || []) as ChatGroup[];
+    console.log('⚠️ Chat groups feature not yet implemented - tables do not exist');
+    return [];
   },
 
   // Get group by ID with details
-  async getGroupById(groupId: string): Promise<ChatGroup> {
-    const { data, error } = await db
-      .from('chat_groups')
-      .select('*')
-      .eq('id', groupId)
-      .single();
-
-    if (error) throw error;
-    return data as ChatGroup;
+  async getGroupById(groupId: string): Promise<ChatGroup | null> {
+    console.log('⚠️ Chat groups feature not yet implemented');
+    return null;
   },
 
   // Get group members
   async getGroupMembers(groupId: string): Promise<ChatGroupMember[]> {
-    const { data, error } = await db
-      .from('chat_group_members')
-      .select(`
-        *,
-        user:users(id, first_name, last_name, email, profile_photo_url, role)
-      `)
-      .eq('group_id', groupId)
-      .order('joined_at', { ascending: true });
-
-    if (error) throw error;
-    return (data || []) as ChatGroupMember[];
+    console.log('⚠️ Chat groups feature not yet implemented');
+    return [];
   },
 
   // Create a new group
@@ -162,164 +110,23 @@ export const chatService = {
     formation_id?: string;
     member_ids: string[];
   }): Promise<ChatGroup> {
-    const userId = await getCurrentUserId();
-
-    // Get user's establishment
-    const { data: userData } = await supabase
-      .from('users')
-      .select('establishment_id')
-      .eq('id', userId)
-      .single();
-
-    if (!userData) throw new Error('User data not found');
-
-    // Create the group
-    const { data: group, error: groupError } = await db
-      .from('chat_groups')
-      .insert({
-        establishment_id: userData.establishment_id,
-        formation_id: groupData.formation_id || null,
-        name: groupData.name,
-        description: groupData.description || null,
-        group_type: 'private',
-        created_by: userId,
-      })
-      .select()
-      .single();
-
-    if (groupError) throw groupError;
-
-    // Add members including creator as admin
-    const members = [
-      { group_id: group.id, user_id: userId, role: 'admin' as const },
-      ...groupData.member_ids.map(memberId => ({
-        group_id: group.id,
-        user_id: memberId,
-        role: 'member' as const,
-      })),
-    ];
-
-    const { error: membersError } = await db
-      .from('chat_group_members')
-      .insert(members);
-
-    if (membersError) throw membersError;
-
-    return group as ChatGroup;
+    throw new Error('Chat groups feature not yet implemented - tables do not exist');
   },
 
   // Get messages for a group
   async getGroupMessages(groupId: string, limit: number = 50): Promise<ChatMessage[]> {
-    const { data, error } = await db
-      .from('chat_messages')
-      .select(`
-        *,
-        sender:users(id, first_name, last_name, profile_photo_url, role),
-        attachments:chat_message_attachments(*)
-      `)
-      .eq('group_id', groupId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    
-    // Fetch replied messages separately if needed
-    const messagesWithReplies = await Promise.all(
-      (data || []).map(async (msg: any) => {
-        if (msg.replied_to_message_id) {
-          const { data: repliedMsg } = await db
-            .from('chat_messages')
-            .select(`
-              id,
-              content,
-              sender:users(id, first_name, last_name)
-            `)
-            .eq('id', msg.replied_to_message_id)
-            .single();
-          
-          return {
-            ...msg,
-            replied_to_message: repliedMsg || null,
-          };
-        }
-        return msg;
-      })
-    );
-    
-    return messagesWithReplies.reverse() as ChatMessage[];
+    console.log('⚠️ Chat messages feature not yet implemented');
+    return [];
   },
 
   // Send a message
   async sendMessage(groupId: string, content: string, repliedToMessageId?: string | null): Promise<ChatMessage> {
-    const userId = await getCurrentUserId();
-
-    const { data, error } = await db
-      .from('chat_messages')
-      .insert({
-        group_id: groupId,
-        sender_id: userId,
-        content,
-        message_type: 'text' as const,
-        replied_to_message_id: repliedToMessageId,
-      })
-      .select(`
-        *,
-        sender:users(id, first_name, last_name, profile_photo_url, role)
-      `)
-      .single();
-
-    if (error) throw error;
-
-    // Fetch replied message if exists
-    let repliedMessage = null;
-    if (repliedToMessageId) {
-      const { data: repliedMsg } = await db
-        .from('chat_messages')
-        .select(`
-          id,
-          content,
-          sender:users(id, first_name, last_name)
-        `)
-        .eq('id', repliedToMessageId)
-        .single();
-      
-      repliedMessage = repliedMsg;
-    }
-
-    // Update group updated_at
-    await db
-      .from('chat_groups')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', groupId);
-
-    return {
-      ...data,
-      replied_to_message: repliedMessage,
-    } as ChatMessage;
+    throw new Error('Chat messages feature not yet implemented - tables do not exist');
   },
 
   // Delete a message
   async deleteMessage(messageId: string): Promise<void> {
-    const userId = await getCurrentUserId();
-
-    // Verify the user owns this message
-    const { data: message } = await db
-      .from('chat_messages')
-      .select('sender_id')
-      .eq('id', messageId)
-      .single();
-
-    if (!message || message.sender_id !== userId) {
-      throw new Error('Vous ne pouvez supprimer que vos propres messages');
-    }
-
-    const { error } = await db
-      .from('chat_messages')
-      .update({ is_deleted: true, content: 'Message supprimé' })
-      .eq('id', messageId);
-
-    if (error) throw error;
+    console.log('⚠️ Chat messages feature not yet implemented');
   },
 
   // Upload attachment
@@ -354,129 +161,18 @@ export const chatService = {
 
   // Update last read timestamp
   async updateLastRead(groupId: string): Promise<void> {
-    try {
-      const userId = await getCurrentUserId();
-      
-      const { error } = await db
-        .from('chat_group_members')
-        .update({ last_read_at: new Date().toISOString() })
-        .eq('group_id', groupId)
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    } catch (error) {
-      // Silently fail if user is not authenticated
-      console.warn('Could not update last read:', error);
-    }
+    console.log('⚠️ Chat groups feature not yet implemented');
   },
 
   // Subscribe to new messages
   subscribeToMessages(groupId: string, callback: (message: ChatMessage) => void) {
-    const channel = supabase
-      .channel(`chat_messages:${groupId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `group_id=eq.${groupId}`,
-        },
-        async (payload) => {
-          // Fetch the complete message with sender info
-          const { data } = await db
-            .from('chat_messages')
-            .select(`
-              *,
-              sender:users(id, first_name, last_name, profile_photo_url, role),
-              attachments:chat_message_attachments(*)
-            `)
-            .eq('id', payload.new.id)
-            .single();
-
-          if (data) {
-            // Fetch replied message if exists
-            let repliedMessage = null;
-            if ((data as any).replied_to_message_id) {
-              const { data: repliedMsg } = await db
-                .from('chat_messages')
-                .select(`
-                  id,
-                  content,
-                  sender:users(id, first_name, last_name)
-                `)
-                .eq('id', (data as any).replied_to_message_id)
-                .single();
-              
-              repliedMessage = repliedMsg;
-            }
-
-            callback({
-              ...data,
-              replied_to_message: repliedMessage,
-            } as ChatMessage);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `group_id=eq.${groupId}`,
-        },
-        async (payload) => {
-          // Fetch the updated message
-          const { data } = await db
-            .from('chat_messages')
-            .select(`
-              *,
-              sender:users(id, first_name, last_name, profile_photo_url, role),
-              attachments:chat_message_attachments(*)
-            `)
-            .eq('id', payload.new.id)
-            .single();
-
-          if (data) {
-            // Fetch replied message if exists
-            let repliedMessage = null;
-            if ((data as any).replied_to_message_id) {
-              const { data: repliedMsg } = await db
-                .from('chat_messages')
-                .select(`
-                  id,
-                  content,
-                  sender:users(id, first_name, last_name)
-                `)
-                .eq('id', (data as any).replied_to_message_id)
-                .single();
-              
-              repliedMessage = repliedMsg;
-            }
-
-            callback({
-              ...data,
-              replied_to_message: repliedMessage,
-            } as ChatMessage);
-          }
-        }
-      )
-      .subscribe();
-
+    // Return a dummy channel since tables don't exist
+    const channel = supabase.channel(`chat_placeholder_${groupId}`);
     return channel;
   },
 
   // Leave group
   async leaveGroup(groupId: string): Promise<void> {
-    const userId = await getCurrentUserId();
-
-    const { error } = await db
-      .from('chat_group_members')
-      .delete()
-      .eq('group_id', groupId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
+    console.log('⚠️ Chat groups feature not yet implemented');
   },
 };

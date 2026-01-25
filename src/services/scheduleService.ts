@@ -37,6 +37,15 @@ export interface ScheduleSlot {
     first_name: string;
     last_name: string;
   };
+  schedules?: {
+    id: string;
+    formation_id: string;
+    title: string;
+    formations?: {
+      title: string;
+      color: string;
+    };
+  };
 }
 
 export const scheduleService = {
@@ -100,18 +109,7 @@ export const scheduleService = {
       .single();
 
     if (error) throw error;
-
-    const schedule = data as Schedule;
-
-    // Si l'emploi du temps est publié pour la première fois, notifier
-    if (updates.status === 'Publié') {
-      await this.notifySchedulePublication(schedule);
-    } else if (schedule.status === 'Publié') {
-      // Si l'emploi du temps est déjà publié et qu'il y a des modifications, notifier
-      await this.notifyScheduleUpdate(schedule);
-    }
-
-    return schedule;
+    return data as Schedule;
   },
 
   // Delete schedule
@@ -171,24 +169,6 @@ export const scheduleService = {
       .single();
 
     if (error) throw error;
-
-    // Récupérer l'emploi du temps pour vérifier s'il faut notifier
-    const { data: scheduleData } = await supabase
-      .from('schedules')
-      .select(`
-        *,
-        formations(title, color)
-      `)
-      .eq('id', data.schedule_id)
-      .single();
-
-    const schedule = scheduleData as Schedule | null;
-
-    // Si l'emploi du temps est publié, notifier les modifications
-    if (schedule && schedule.status === 'Publié') {
-      await this.notifyScheduleUpdate(schedule);
-    }
-
     return data;
   },
 
@@ -216,13 +196,10 @@ export const scheduleService = {
           id,
           formation_id,
           title,
-          academic_year,
-          status,
           formations(title, color)
         )
       `)
       .in('schedules.formation_id', formationIds)
-      .eq('schedules.status', 'Publié')
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 
@@ -242,13 +219,10 @@ export const scheduleService = {
           id,
           formation_id,
           title,
-          academic_year,
-          status,
           formations(title, color)
         )
       `)
       .eq('instructor_id', instructorId)
-      .eq('schedules.status', 'Publié')
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 
@@ -268,52 +242,13 @@ export const scheduleService = {
           id,
           formation_id,
           title,
-          academic_year,
-          status,
           formations(title, color)
         )
       `)
-      .eq('schedules.status', 'Publié')
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 
     if (error) throw error;
     return data || [];
   },
-
-  // Notifier les utilisateurs lors de la publication d'un emploi du temps
-  async notifySchedulePublication(schedule: Schedule) {
-    try {
-      const { notificationService } = await import('./notificationService');
-      
-      await notificationService.notifyFormationUsers(
-        schedule.formation_id,
-        'Nouvel emploi du temps publié',
-        `L'emploi du temps "${schedule.title}" a été publié et est maintenant disponible.`,
-        'schedule_published',
-        { schedule_id: schedule.id }
-      );
-    } catch (error) {
-      console.error('Error sending schedule publication notifications:', error);
-      // Ne pas faire échouer la publication si les notifications échouent
-    }
-  },
-
-  // Notifier les utilisateurs lors de modifications d'un emploi du temps
-  async notifyScheduleUpdate(schedule: Schedule) {
-    try {
-      const { notificationService } = await import('./notificationService');
-      
-      await notificationService.notifyFormationUsers(
-        schedule.formation_id,
-        'Emploi du temps modifié',
-        `L'emploi du temps "${schedule.title}" a été modifié. Veuillez consulter les nouvelles informations.`,
-        'schedule_update',
-        { schedule_id: schedule.id }
-      );
-    } catch (error) {
-      console.error('Error sending schedule update notifications:', error);
-      // Ne pas faire échouer la modification si les notifications échouent
-    }
-  }
 };
