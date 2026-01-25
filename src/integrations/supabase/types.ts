@@ -55,6 +55,33 @@ export type Database = {
           },
         ]
       }
+      assignment_files: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+        }
+        Relationships: []
+      }
       assignment_submissions: {
         Row: {
           assignment_id: string
@@ -482,6 +509,48 @@ export type Database = {
           },
         ]
       }
+      module_assignments: {
+        Row: {
+          assignment_type: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_published: boolean | null
+          max_points: number | null
+          module_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assignment_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_published?: boolean | null
+          max_points?: number | null
+          module_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assignment_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_published?: boolean | null
+          max_points?: number | null
+          module_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -623,16 +692,55 @@ export type Database = {
           },
         ]
       }
+      submission_files: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_files_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       text_book_entries: {
         Row: {
           content: string
           created_at: string
           created_by: string | null
           date: string
+          end_time: string | null
           homework: string | null
           id: string
+          instructor_id: string | null
           objectives: string | null
           schedule_slot_id: string | null
+          start_time: string | null
+          subject_matter: string | null
           text_book_id: string
           updated_at: string
         }
@@ -641,10 +749,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date: string
+          end_time?: string | null
           homework?: string | null
           id?: string
+          instructor_id?: string | null
           objectives?: string | null
           schedule_slot_id?: string | null
+          start_time?: string | null
+          subject_matter?: string | null
           text_book_id: string
           updated_at?: string
         }
@@ -653,10 +765,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date?: string
+          end_time?: string | null
           homework?: string | null
           id?: string
+          instructor_id?: string | null
           objectives?: string | null
           schedule_slot_id?: string | null
+          start_time?: string | null
+          subject_matter?: string | null
           text_book_id?: string
           updated_at?: string
         }
@@ -684,8 +800,36 @@ export type Database = {
           },
         ]
       }
+      text_book_entry_files: {
+        Row: {
+          created_at: string | null
+          entry_id: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          entry_id: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          entry_id?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+        }
+        Relationships: []
+      }
       text_books: {
         Row: {
+          academic_year: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -695,6 +839,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          academic_year?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -704,6 +849,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          academic_year?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -997,6 +1143,7 @@ export type Database = {
       }
     }
     Functions: {
+      generate_signature_token: { Args: { sheet_id: string }; Returns: string }
       get_current_user_establishment: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
       get_my_context: { Args: never; Returns: Json }
@@ -1013,6 +1160,14 @@ export type Database = {
         }[]
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      validate_signature_token: {
+        Args: { token_param: string }
+        Returns: {
+          error_message: string
+          is_valid: boolean
+          sheet_id: string
+        }[]
+      }
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "expired" | "cancelled"

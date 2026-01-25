@@ -64,14 +64,14 @@ const SignaturePublique = () => {
       if (!validationData || !validationData.is_valid) {
         setTokenValid({ 
           valid: false, 
-          expired: validationData?.expires_at ? new Date(validationData.expires_at) < new Date() : true,
-          expires_at: validationData?.expires_at
+          expired: !!validationData?.error_message?.includes('expiré'),
+          expires_at: undefined
         });
         setLoading(false);
         return;
       }
 
-      setTokenValid(validationData);
+      setTokenValid({ valid: true, expired: false });
 
       // 4. Charger la feuille d'émargement
       const sheet = await attendanceService.getAttendanceSheetByToken(token!);

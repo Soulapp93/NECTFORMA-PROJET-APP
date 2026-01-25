@@ -82,6 +82,9 @@ export interface ChatMessageAttachment {
   created_at: string;
 }
 
+// Type helper for database operations
+const db = supabase as any;
+
 export const chatService = {
   // Get all groups for current user
   async getUserGroups(): Promise<ChatGroup[]> {
@@ -89,7 +92,7 @@ export const chatService = {
     console.log('✅ Getting groups for user:', userId);
 
     // First, get the group IDs the user is a member of
-    const { data: memberData, error: memberError } = await supabase
+    const { data: memberData, error: memberError } = await db
       .from('chat_group_members')
       .select('group_id')
       .eq('user_id', userId);
@@ -106,10 +109,10 @@ export const chatService = {
       return [];
     }
 
-    const groupIds = memberData.map(m => m.group_id);
+    const groupIds = memberData.map((m: any) => m.group_id);
 
     // Then fetch the groups
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('chat_groups')
       .select('*')
       .in('id', groupIds)
@@ -127,7 +130,7 @@ export const chatService = {
 
   // Get group by ID with details
   async getGroupById(groupId: string): Promise<ChatGroup> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('chat_groups')
       .select('*')
       .eq('id', groupId)
@@ -139,7 +142,7 @@ export const chatService = {
 
   // Get group members
   async getGroupMembers(groupId: string): Promise<ChatGroupMember[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('chat_group_members')
       .select(`
         *,
@@ -171,7 +174,7 @@ export const chatService = {
     if (!userData) throw new Error('User data not found');
 
     // Create the group
-    const { data: group, error: groupError } = await supabase
+    const { data: group, error: groupError } = await db
       .from('chat_groups')
       .insert({
         establishment_id: userData.establishment_id,
@@ -189,14 +192,14 @@ export const chatService = {
     // Add members including creator as admin
     const members = [
       { group_id: group.id, user_id: userId, role: 'admin' as const },
-      ...groupData.member_ids.map(userId => ({
+      ...groupData.member_ids.map(memberId => ({
         group_id: group.id,
-        user_id: userId,
+        user_id: memberId,
         role: 'member' as const,
       })),
     ];
 
-    const { error: membersError } = await supabase
+    const { error: membersError } = await db
       .from('chat_group_members')
       .insert(members);
 
@@ -207,7 +210,7 @@ export const chatService = {
 
   // Get messages for a group
   async getGroupMessages(groupId: string, limit: number = 50): Promise<ChatMessage[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('chat_messages')
       .select(`
         *,
@@ -225,7 +228,7 @@ export const chatService = {
     const messagesWithReplies = await Promise.all(
       (data || []).map(async (msg: any) => {
         if (msg.replied_to_message_id) {
-          const { data: repliedMsg } = await supabase
+          const { data: repliedMsg } = await db
             .from('chat_messages')
             .select(`
               id,
@@ -244,14 +247,14 @@ export const chatService = {
       })
     );
     
-    return messagesWithReplies.reverse();
+    return messagesWithReplies.reverse() as ChatMessage[];
   },
 
   // Send a message
   async sendMessage(groupId: string, content: string, repliedToMessageId?: string | null): Promise<ChatMessage> {
     const userId = await getCurrentUserId();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('chat_messages')
       .insert({
         group_id: groupId,
@@ -271,7 +274,7 @@ export const chatService = {
     // Fetch replied message if exists
     let repliedMessage = null;
     if (repliedToMessageId) {
-      const { data: repliedMsg } = await supabase
+      const { data: repliedMsg } = await db
         .from('chat_messages')
         .select(`
           id,
@@ -285,7 +288,7 @@ export const chatService = {
     }
 
     // Update group updated_at
-    await supabase
+    await db
       .from('chat_groups')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', groupId);
@@ -301,7 +304,7 @@ export const chatService = {
     const userId = await getCurrentUserId();
 
     // Verify the user owns this message
-    const { data: message } = await supabase
+    const { data: message } = await db
       .from('chat_messages')
       .select('sender_id')
       .eq('id', messageId)
@@ -311,7 +314,7 @@ export const chatService = {
       throw new Error('Vous ne pouvez supprimer que vos propres messages');
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from('chat_messages')
       .update({ is_deleted: true, content: 'Message supprimé' })
       .eq('id', messageId);
@@ -324,7 +327,7 @@ export const chatService = {
     const fileExt = file.name.split('.').pop();
     const fileName = `${messageId}/${Date.now()}.${fileExt}`;
     
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('module-files')
       .upload(fileName, file);
 
@@ -341,13 +344,12 @@ export const chatService = {
         file_name: file.name,
         file_url: publicUrl,
         file_size: file.size,
-        content_type: file.type,
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as unknown as ChatMessageAttachment;
   },
 
   // Update last read timestamp
@@ -355,7 +357,7 @@ export const chatService = {
     try {
       const userId = await getCurrentUserId();
       
-      const { error } = await supabase
+      const { error } = await db
         .from('chat_group_members')
         .update({ last_read_at: new Date().toISOString() })
         .eq('group_id', groupId)
@@ -382,7 +384,7 @@ export const chatService = {
         },
         async (payload) => {
           // Fetch the complete message with sender info
-          const { data } = await supabase
+          const { data } = await db
             .from('chat_messages')
             .select(`
               *,
@@ -396,7 +398,7 @@ export const chatService = {
             // Fetch replied message if exists
             let repliedMessage = null;
             if ((data as any).replied_to_message_id) {
-              const { data: repliedMsg } = await supabase
+              const { data: repliedMsg } = await db
                 .from('chat_messages')
                 .select(`
                   id,
@@ -426,7 +428,7 @@ export const chatService = {
         },
         async (payload) => {
           // Fetch the updated message
-          const { data } = await supabase
+          const { data } = await db
             .from('chat_messages')
             .select(`
               *,
@@ -440,7 +442,7 @@ export const chatService = {
             // Fetch replied message if exists
             let repliedMessage = null;
             if ((data as any).replied_to_message_id) {
-              const { data: repliedMsg } = await supabase
+              const { data: repliedMsg } = await db
                 .from('chat_messages')
                 .select(`
                   id,
@@ -469,7 +471,7 @@ export const chatService = {
   async leaveGroup(groupId: string): Promise<void> {
     const userId = await getCurrentUserId();
 
-    const { error } = await supabase
+    const { error } = await db
       .from('chat_group_members')
       .delete()
       .eq('group_id', groupId)

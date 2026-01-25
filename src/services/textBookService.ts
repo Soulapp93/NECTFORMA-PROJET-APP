@@ -27,10 +27,20 @@ export interface TextBookEntry {
   created_by?: string;
   created_at: string;
   updated_at: string;
-  // Computed properties for compatibility
   start_time?: string;
   end_time?: string;
   subject_matter?: string;
+  instructor_id?: string;
+  files?: TextBookEntryFile[];
+}
+
+export interface TextBookEntryFile {
+  id: string;
+  entry_id: string;
+  file_name: string;
+  file_url: string;
+  file_size?: number;
+  created_at?: string;
 }
 
 export const textBookService = {
@@ -128,12 +138,36 @@ export const textBookService = {
     return data;
   },
 
-  async createTextBookEntry(data: { text_book_id: string; date: string; content: string; objectives?: string; homework?: string; schedule_slot_id?: string; created_by?: string }) {
+  async createTextBookEntry(data: { 
+    text_book_id: string; 
+    date: string; 
+    content?: string; 
+    objectives?: string; 
+    homework?: string; 
+    schedule_slot_id?: string; 
+    created_by?: string;
+    start_time?: string;
+    end_time?: string;
+    subject_matter?: string;
+    instructor_id?: string;
+  }) {
     console.log('Création d\'entrée de cahier de texte:', data);
     
-    const { data: entry, error } = await supabase
-      .from('text_book_entries')
-      .insert([data])
+    const { data: entry, error } = await (supabase
+      .from('text_book_entries') as any)
+      .insert([{
+        text_book_id: data.text_book_id,
+        date: data.date,
+        content: data.content || '',
+        objectives: data.objectives,
+        homework: data.homework,
+        schedule_slot_id: data.schedule_slot_id,
+        created_by: data.created_by,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        subject_matter: data.subject_matter,
+        instructor_id: data.instructor_id
+      }])
       .select()
       .single();
 
@@ -146,11 +180,21 @@ export const textBookService = {
     return entry;
   },
 
-  async updateTextBookEntry(entryId: string, data: Partial<{ date: string; content: string; objectives?: string; homework?: string; schedule_slot_id?: string }>) {
+  async updateTextBookEntry(entryId: string, data: Partial<{ 
+    date: string; 
+    content: string; 
+    objectives?: string; 
+    homework?: string; 
+    schedule_slot_id?: string;
+    start_time?: string;
+    end_time?: string;
+    subject_matter?: string;
+    instructor_id?: string;
+  }>) {
     console.log('Modification d\'entrée de cahier de texte:', entryId, data);
     
-    const { data: entry, error } = await supabase
-      .from('text_book_entries')
+    const { data: entry, error } = await (supabase
+      .from('text_book_entries') as any)
       .update(data)
       .eq('id', entryId)
       .select()
@@ -163,6 +207,74 @@ export const textBookService = {
 
     console.log('Entrée modifiée:', entry);
     return entry;
+  },
+
+  async uploadEntryFiles(entryId: string, files: File[]): Promise<TextBookEntryFile[]> {
+    console.log('Upload de fichiers pour l\'entrée:', entryId);
+    const uploadedFiles: TextBookEntryFile[] = [];
+
+    for (const file of files) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const filePath = `text-book-entries/${entryId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Erreur upload fichier:', uploadError);
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath);
+
+      const { data: fileData, error: insertError } = await (supabase
+        .from('text_book_entry_files') as any)
+        .insert({
+          entry_id: entryId,
+          file_name: file.name,
+          file_url: publicUrl,
+          file_size: file.size
+        })
+        .select()
+        .single();
+
+      if (!insertError && fileData) {
+        uploadedFiles.push(fileData);
+      }
+    }
+
+    return uploadedFiles;
+  },
+
+  async deleteEntryFile(fileId: string): Promise<void> {
+    console.log('Suppression du fichier:', fileId);
+    
+    const { error } = await (supabase
+      .from('text_book_entry_files') as any)
+      .delete()
+      .eq('id', fileId);
+
+    if (error) {
+      console.error('Erreur lors de la suppression du fichier:', error);
+      throw new Error(`Erreur lors de la suppression du fichier: ${error.message}`);
+    }
+  },
+
+  async getEntryFiles(entryId: string): Promise<TextBookEntryFile[]> {
+    const { data, error } = await (supabase
+      .from('text_book_entry_files') as any)
+      .select('*')
+      .eq('entry_id', entryId);
+
+    if (error) {
+      console.error('Erreur lors de la récupération des fichiers:', error);
+      return [];
+    }
+
+    return data || [];
   },
 
   async deleteTextBookEntry(entryId: string) {

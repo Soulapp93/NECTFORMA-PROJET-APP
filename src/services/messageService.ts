@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Type helper for database operations on non-typed tables
+const db = supabase as any;
 export interface Message {
   id: string;
   sender_id: string;
