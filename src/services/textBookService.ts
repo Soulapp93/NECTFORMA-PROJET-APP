@@ -3,10 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 export interface TextBook {
   id: string;
   formation_id: string;
-  academic_year: string;
+  title: string;
+  description?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
+  // Computed property for compatibility
+  academic_year?: string;
   formations?: {
     title: string;
     color?: string;
@@ -17,36 +20,31 @@ export interface TextBookEntry {
   id: string;
   text_book_id: string;
   date: string;
-  start_time: string;
-  end_time: string;
-  subject_matter: string;
-  content?: string;
+  content: string;
+  objectives?: string;
   homework?: string;
-  instructor_id?: string;
+  schedule_slot_id?: string;
+  created_by?: string;
   created_at: string;
   updated_at: string;
-  files?: TextBookEntryFile[];
-}
-
-export interface TextBookEntryFile {
-  id: string;
-  text_book_entry_id: string;
-  file_name: string;
-  file_url: string;
-  file_size?: number;
-  content_type?: string;
-  uploaded_at: string;
-  created_at: string;
-  updated_at: string;
+  // Computed properties for compatibility
+  start_time?: string;
+  end_time?: string;
+  subject_matter?: string;
 }
 
 export const textBookService = {
-  async createTextBook(data: { formation_id: string; academic_year: string; created_by?: string }) {
+  async createTextBook(data: { formation_id: string; title: string; description?: string; created_by?: string }) {
     console.log('Création de cahier de texte:', data);
     
     const { data: textBook, error } = await supabase
       .from('text_books')
-      .insert([data])
+      .insert([{
+        formation_id: data.formation_id,
+        title: data.title,
+        description: data.description,
+        created_by: data.created_by
+      }])
       .select(`
         *,
         formations (
@@ -117,13 +115,9 @@ export const textBookService = {
     
     const { data, error } = await supabase
       .from('text_book_entries')
-      .select(`
-        *,
-        files:text_book_entry_files(*)
-      `)
+      .select('*')
       .eq('text_book_id', textBookId)
-      .order('date', { ascending: false })
-      .order('start_time', { ascending: false });
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Erreur lors de la récupération des entrées:', error);
@@ -134,7 +128,7 @@ export const textBookService = {
     return data;
   },
 
-  async createTextBookEntry(data: Omit<TextBookEntry, 'id' | 'created_at' | 'updated_at' | 'files'>) {
+  async createTextBookEntry(data: { text_book_id: string; date: string; content: string; objectives?: string; homework?: string; schedule_slot_id?: string; created_by?: string }) {
     console.log('Création d\'entrée de cahier de texte:', data);
     
     const { data: entry, error } = await supabase
@@ -152,59 +146,7 @@ export const textBookService = {
     return entry;
   },
 
-  async uploadEntryFiles(entryId: string, files: File[]) {
-    console.log('Upload de fichiers pour l\'entrée:', entryId, files.length, 'fichiers');
-    
-    const uploadedFiles: TextBookEntryFile[] = [];
-    
-    for (const file of files) {
-      try {
-        // Upload file to storage
-        const fileName = `${Date.now()}_${file.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('module-files')
-          .upload(`text-book-entries/${entryId}/${fileName}`, file);
-
-        if (uploadError) {
-          console.error('Erreur upload storage:', uploadError);
-          throw new Error(`Erreur upload: ${uploadError.message}`);
-        }
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('module-files')
-          .getPublicUrl(uploadData.path);
-
-        // Save file info to database
-        const { data: fileData, error: dbError } = await supabase
-          .from('text_book_entry_files')
-          .insert([{
-            text_book_entry_id: entryId,
-            file_name: file.name,
-            file_url: publicUrl,
-            file_size: file.size,
-            content_type: file.type || undefined,
-          }])
-          .select()
-          .single();
-
-        if (dbError) {
-          console.error('Erreur sauvegarde DB:', dbError);
-          throw new Error(`Erreur sauvegarde: ${dbError.message}`);
-        }
-
-        uploadedFiles.push(fileData);
-      } catch (error) {
-        console.error('Erreur upload fichier:', file.name, error);
-        throw error;
-      }
-    }
-
-    console.log('Fichiers uploadés:', uploadedFiles);
-    return uploadedFiles;
-  },
-
-  async updateTextBookEntry(entryId: string, data: Partial<Omit<TextBookEntry, 'id' | 'created_at' | 'updated_at' | 'files'>>) {
+  async updateTextBookEntry(entryId: string, data: Partial<{ date: string; content: string; objectives?: string; homework?: string; schedule_slot_id?: string }>) {
     console.log('Modification d\'entrée de cahier de texte:', entryId, data);
     
     const { data: entry, error } = await supabase
@@ -237,22 +179,6 @@ export const textBookService = {
     }
 
     console.log('Entrée supprimée avec succès');
-  },
-
-  async deleteEntryFile(fileId: string) {
-    console.log('Suppression du fichier:', fileId);
-    
-    const { error } = await supabase
-      .from('text_book_entry_files')
-      .delete()
-      .eq('id', fileId);
-
-    if (error) {
-      console.error('Erreur lors de la suppression du fichier:', error);
-      throw new Error(`Erreur lors de la suppression du fichier: ${error.message}`);
-    }
-
-    console.log('Fichier supprimé avec succès');
   },
 
   async archiveTextBook(textBookId: string) {

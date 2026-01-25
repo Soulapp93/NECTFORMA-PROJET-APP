@@ -37,22 +37,21 @@ const QRCodeDisplayModal: React.FC<QRCodeDisplayModalProps> = ({
       // Récupérer le nombre total d'étudiants (role = 'Étudiant' uniquement)
       let total = 0;
       
-      const { data: sfData } = await supabase
-        .from('student_formations')
-        .select('student_id, users!student_id(role)')
+      const { data: ufaData } = await supabase
+        .from('user_formation_assignments')
+        .select('user_id')
         .eq('formation_id', attendanceSheet.formation_id);
 
-      if (sfData && sfData.length > 0) {
-        total = sfData.filter((e: any) => e.users?.role === 'Étudiant').length;
-      } else {
-        // Fallback
-        const { data: ufaData } = await supabase
-          .from('user_formation_assignments')
-          .select('user_id, users!user_id(role)')
-          .eq('formation_id', attendanceSheet.formation_id);
-        
-        if (ufaData) {
-          total = ufaData.filter((e: any) => e.users?.role === 'Étudiant').length;
+      if (ufaData && ufaData.length > 0) {
+        // Récupérer les détails des utilisateurs
+        const userIds = ufaData.map((e: any) => e.user_id);
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, role')
+          .in('id', userIds);
+
+        if (usersData) {
+          total = usersData.filter((user: any) => user.role === 'Étudiant').length;
         }
       }
 

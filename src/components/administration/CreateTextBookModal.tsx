@@ -21,7 +21,7 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
   onSuccess,
 }) => {
   const [selectedFormation, setSelectedFormation] = useState<string>('');
-  const [academicYear, setAcademicYear] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { formations } = useFormations();
@@ -30,10 +30,10 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedFormation || !academicYear) {
+    if (!selectedFormation) {
       toast({
         title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        description: "Veuillez sélectionner une formation.",
         variant: "destructive",
       });
       return;
@@ -41,10 +41,13 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
 
     setIsLoading(true);
     
+    const selectedFormationData = formations.find(f => f.id === selectedFormation);
+    const defaultTitle = `Cahier de texte - ${selectedFormationData?.title || 'Formation'}`;
+    
     try {
       await textBookService.createTextBook({
         formation_id: selectedFormation,
-        academic_year: academicYear,
+        title: title || defaultTitle,
       });
 
       toast({
@@ -53,7 +56,7 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
       });
 
       setSelectedFormation('');
-      setAcademicYear('');
+      setTitle('');
       onSuccess();
       onClose();
     } catch (error) {
@@ -70,7 +73,7 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
 
   const handleClose = () => {
     setSelectedFormation('');
-    setAcademicYear('');
+    setTitle('');
     onClose();
   };
 
@@ -104,14 +107,13 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="academic_year">Année académique</Label>
+            <Label htmlFor="title">Titre (optionnel)</Label>
             <Input
-              id="academic_year"
+              id="title"
               type="text"
-              placeholder="ex: 2025-2026"
-              value={academicYear}
-              onChange={(e) => setAcademicYear(e.target.value)}
-              required
+              placeholder="ex: Cahier de texte 2025-2026"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
 

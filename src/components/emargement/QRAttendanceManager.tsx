@@ -60,30 +60,24 @@ const QRAttendanceManager: React.FC<QRAttendanceManagerProps> = ({
       // Récupérer UNIQUEMENT les étudiants inscrits (exclure formateur et admins)
       let totalStudents = 0;
 
-      // Essai 1: student_formations avec filtre role
-      const { data: sfEnrollments, error: sfError } = await supabase
-        .from('student_formations')
-        .select('student_id, users!student_id(id, role)')
+      // Utiliser user_formation_assignments
+      const { data: ufaEnrollments } = await supabase
+        .from('user_formation_assignments')
+        .select('user_id')
         .eq('formation_id', attendanceSheet.formation_id);
-
-      if (!sfError && sfEnrollments && sfEnrollments.length > 0) {
-        // Compter uniquement les étudiants ET exclure le formateur explicitement
-        totalStudents = sfEnrollments.filter(
-          (e: any) => e.users?.role === 'Étudiant' && e.users?.id !== attendanceSheet.instructor_id
-        ).length;
-      }
       
-      // Fallback: user_formation_assignments si student_formations ne donne rien
-      if (totalStudents === 0) {
-        const { data: ufaEnrollments } = await supabase
-          .from('user_formation_assignments')
-          .select('user_id, users!user_id(id, role)')
-          .eq('formation_id', attendanceSheet.formation_id);
-        
-        if (ufaEnrollments) {
+      if (ufaEnrollments && ufaEnrollments.length > 0) {
+        // Récupérer les détails des utilisateurs
+        const userIds = ufaEnrollments.map((e: any) => e.user_id);
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, role')
+          .in('id', userIds);
+
+        if (usersData) {
           // STRICTEMENT étudiants uniquement ET exclure formateur
-          totalStudents = ufaEnrollments.filter(
-            (e: any) => e.users?.role === 'Étudiant' && e.user_id !== attendanceSheet.instructor_id
+          totalStudents = usersData.filter(
+            (user: any) => user.role === 'Étudiant' && user.id !== attendanceSheet.instructor_id
           ).length;
         }
       }

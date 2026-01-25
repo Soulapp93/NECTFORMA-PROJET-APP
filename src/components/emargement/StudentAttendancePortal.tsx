@@ -67,33 +67,24 @@ const StudentAttendancePortal: React.FC<StudentAttendancePortalProps> = ({
       // Récupérer les étudiants inscrits à la formation
       let enrolledStudents: any[] = [];
       
-      // Essai 1: student_formations
-      const { data: sfData, error: sfError } = await supabase
-        .from('student_formations')
-        .select(`
-          student_id,
-          users!student_id(id, first_name, last_name, email, role)
-        `)
+      // Utiliser user_formation_assignments
+      const { data: ufaData } = await supabase
+        .from('user_formation_assignments')
+        .select('user_id')
         .eq('formation_id', sheetData.formation_id);
 
-      if (!sfError && sfData && sfData.length > 0) {
-        enrolledStudents = sfData.filter((e: any) => e.users?.role === 'Étudiant');
-      }
+      if (ufaData && ufaData.length > 0) {
+        // Récupérer les détails des utilisateurs
+        const userIds = ufaData.map((e: any) => e.user_id);
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role')
+          .in('id', userIds);
 
-      // Fallback: user_formation_assignments
-      if (enrolledStudents.length === 0) {
-        const { data: ufaData } = await supabase
-          .from('user_formation_assignments')
-          .select(`
-            user_id,
-            users!user_id(id, first_name, last_name, email, role)
-          `)
-          .eq('formation_id', sheetData.formation_id);
-
-        if (ufaData) {
-          enrolledStudents = ufaData
-            .filter((e: any) => e.users?.role === 'Étudiant')
-            .map((e: any) => ({ student_id: e.user_id, users: e.users }));
+        if (usersData) {
+          enrolledStudents = usersData
+            .filter((user: any) => user.role === 'Étudiant')
+            .map((user: any) => ({ student_id: user.id, users: user }));
         }
       }
 

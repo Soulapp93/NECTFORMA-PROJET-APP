@@ -95,28 +95,39 @@ const SimplifiedUserModal: React.FC<SimplifiedUserModalProps> = ({
           // Charger le tuteur existant pour les étudiants
           if (user.role === 'Étudiant') {
             try {
+              // Récupérer l'assignation tuteur-étudiant
               const { data: tutorAssignments } = await supabase
-                .from('tutor_students_view')
-                .select('*')
+                .from('tutor_student_assignments')
+                .select('tutor_id, is_active')
                 .eq('student_id', user.id)
                 .eq('is_active', true)
                 .limit(1);
 
               if (tutorAssignments && tutorAssignments.length > 0) {
-                const existingTutor = tutorAssignments[0];
-                setTutorData({
-                  first_name: existingTutor.tutor_first_name || '',
-                  last_name: existingTutor.tutor_last_name || '',
-                  email: existingTutor.tutor_email || '',
-                  phone: '',
-                  company_name: existingTutor.company_name || '',
-                  company_address: '',
-                  position: existingTutor.position || '',
-                  contract_type: existingTutor.contract_type || '',
-                  contract_start_date: existingTutor.contract_start_date || '',
-                  contract_end_date: existingTutor.contract_end_date || ''
-                });
-                setShowTutorSection(true);
+                // Récupérer les détails du tuteur séparément
+                const { data: tutorDetails } = await supabase
+                  .from('tutors')
+                  .select('first_name, last_name, email, phone, company_name, position')
+                  .eq('id', tutorAssignments[0].tutor_id)
+                  .single();
+
+                if (tutorDetails) {
+                  setTutorData({
+                    first_name: tutorDetails.first_name || '',
+                    last_name: tutorDetails.last_name || '',
+                    email: tutorDetails.email || '',
+                    phone: tutorDetails.phone || '',
+                    company_name: tutorDetails.company_name || '',
+                    company_address: '',
+                    position: tutorDetails.position || '',
+                    contract_type: '',
+                    contract_start_date: '',
+                    contract_end_date: ''
+                  });
+                  setShowTutorSection(true);
+                } else {
+                  resetTutorData();
+                }
               } else {
                 resetTutorData();
               }
