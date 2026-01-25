@@ -55,23 +55,10 @@ const MessageAttachmentsViewer: React.FC<MessageAttachmentsViewerProps> = ({ mes
   const [selectedFile, setSelectedFile] = useState<Attachment | null>(null);
 
   useEffect(() => {
-    const fetchAttachments = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('message_attachments')
-          .select('*')
-          .eq('message_id', messageId);
-
-        if (error) throw error;
-        setAttachments(data || []);
-      } catch (error) {
-        console.error('Error fetching attachments:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAttachments();
+    // Message attachments table doesn't exist in current schema
+    // This component will be used when the chat_message_attachments table is available
+    setAttachments([]);
+    setLoading(false);
   }, [messageId]);
 
   const handleView = (attachment: Attachment) => {

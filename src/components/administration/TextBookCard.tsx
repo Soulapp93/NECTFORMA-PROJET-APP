@@ -112,7 +112,7 @@ const TextBookCard: React.FC<TextBookCardProps> = ({ textBook, onUpdate }) => {
               {textBook.formations?.title || 'Formation'}
             </div>
             <div className="text-sm opacity-90">
-              Année {textBook.academic_year}
+              {textBook.description || ''}
             </div>
             <div className="text-sm font-medium">
               {entries.length} entrée{entries.length > 1 ? 's' : ''}

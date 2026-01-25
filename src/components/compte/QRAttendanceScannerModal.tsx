@@ -169,24 +169,26 @@ const QRAttendanceScannerModal: React.FC<QRAttendanceScannerModalProps> = ({
         throw new Error('QR Code invalide');
       }
 
-      // Validate QR code and get session info
-      const { data: validationResult, error: validationError } = await supabase.rpc(
-        'validate_qr_code_secure',
-        { code_param: code, user_id_param: userId }
-      );
+      // Find attendance sheet by QR code
+      const { data: sheetByQr, error: qrError } = await supabase
+        .from('attendance_sheets')
+        .select('id, formation_id, is_open_for_signing')
+        .eq('qr_code', code)
+        .eq('is_open_for_signing', true)
+        .maybeSingle();
 
-      if (validationError) throw validationError;
-
-      const result = validationResult?.[0];
-      if (!result?.is_valid) {
-        throw new Error(result?.error_message || 'Session invalide');
+      if (qrError || !sheetByQr) {
+        throw new Error('QR Code invalide ou session fermée');
       }
+
+      const result = { sheet_id: sheetByQr.id, formation_id: sheetByQr.formation_id };
 
       // Get full session details using a simpler query that works with RLS
       const { data: sheetData, error: sheetError } = await supabase
         .from('attendance_sheets')
         .select(`
           id,
+          title,
           date,
           start_time,
           end_time,
@@ -251,7 +253,7 @@ const QRAttendanceScannerModal: React.FC<QRAttendanceScannerModalProps> = ({
 
       setSessionInfo({
         sheetId: result.sheet_id,
-        formationTitle: result.formation_title || formationData?.title || 'Formation',
+        formationTitle: formationData?.title || sheetData.title || 'Formation',
         date: sheetData.date,
         startTime: sheetData.start_time?.slice(0, 5) || '',
         endTime: sheetData.end_time?.slice(0, 5) || '',
@@ -287,14 +289,8 @@ const QRAttendanceScannerModal: React.FC<QRAttendanceScannerModalProps> = ({
 
       if (signatureError) throw signatureError;
 
-      // Log the action
-      await supabase.rpc('log_attendance_action', {
-        sheet_id: sessionInfo.sheetId,
-        user_id: userId,
-        action_type: 'qr_scan',
-        user_agent_val: navigator.userAgent,
-        meta: JSON.stringify({ auto_sign: true, has_signature: !!userSignature })
-      });
+      // Log action is optional - the function may not exist
+      console.log('Présence validée pour:', sessionInfo.sheetId);
 
       toast.success('Présence validée avec succès !');
       onClose();

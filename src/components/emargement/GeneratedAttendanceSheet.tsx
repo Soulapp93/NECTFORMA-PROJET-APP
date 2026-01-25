@@ -78,13 +78,10 @@ const GeneratedAttendanceSheet: React.FC<GeneratedAttendanceSheetProps> = ({
 
       if (sheetError) throw sheetError;
 
-      // Récupérer les signatures séparément
+      // Récupérer les signatures séparément (sans jointure users)
       const { data: signatures, error: signaturesError } = await supabase
         .from('attendance_signatures')
-        .select(`
-          *,
-          users(first_name, last_name, email)
-        `)
+        .select('*')
         .eq('attendance_sheet_id', attendanceSheetId);
 
       if (signaturesError) throw signaturesError;
@@ -137,37 +134,25 @@ const GeneratedAttendanceSheet: React.FC<GeneratedAttendanceSheetProps> = ({
       let enrolledStudents: any[] = [];
       const instructorIdToExclude = sheetData.instructor_id;
 
-      // Essai 1: student_formations - filtrer strictement les étudiants
-      const { data: studentFormations, error: sfError } = await supabase
-        .from('student_formations')
-        .select(`
-          student_id,
-          users!student_id(id, first_name, last_name, email, role)
-        `)
+      // Utiliser user_formation_assignments
+      const { data: ufaData, error: ufaError } = await supabase
+        .from('user_formation_assignments')
+        .select('user_id')
         .eq('formation_id', sheetData.formation_id);
 
-      if (!sfError && studentFormations && studentFormations.length > 0) {
-        // FILTRER STRICTEMENT : uniquement rôle "Étudiant" ET exclure explicitement le formateur
-        enrolledStudents = studentFormations.filter(
-          (e: any) => e.users?.role === 'Étudiant' && e.users?.id !== instructorIdToExclude
-        );
-      }
+      if (!ufaError && ufaData && ufaData.length > 0) {
+        // Récupérer les détails des utilisateurs
+        const userIds = ufaData.map((e: any) => e.user_id);
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role')
+          .in('id', userIds);
 
-      // Fallback: user_formation_assignments si student_formations est vide
-      if (enrolledStudents.length === 0) {
-        const { data: ufaData, error: ufaError } = await supabase
-          .from('user_formation_assignments')
-          .select(`
-            user_id,
-            users!user_id(id, first_name, last_name, email, role)
-          `)
-          .eq('formation_id', sheetData.formation_id);
-
-        if (!ufaError && ufaData) {
-          // FILTRER STRICTEMENT : uniquement rôle "Étudiant" ET exclure le formateur
-          enrolledStudents = ufaData
-            .filter((e: any) => e.users?.role === 'Étudiant' && e.user_id !== instructorIdToExclude)
-            .map((e: any) => ({ student_id: e.user_id, users: e.users }));
+        if (usersData) {
+          // FILTRER STRICTEMENT : uniquement rôle "Étudiant" ET exclure explicitement le formateur
+          enrolledStudents = usersData
+            .filter((user: any) => user.role === 'Étudiant' && user.id !== instructorIdToExclude)
+            .map((user: any) => ({ student_id: user.id, users: user }));
         }
       }
 

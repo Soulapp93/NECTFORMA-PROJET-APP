@@ -31,14 +31,11 @@ const AttendanceSheetView: React.FC<AttendanceSheetViewProps> = ({
     const loadSignatures = async () => {
       const { data: signatures, error } = await supabase
         .from('attendance_signatures')
-        .select(`
-          *,
-          user:users(first_name, last_name, email)
-        `)
+        .select('*')
         .eq('attendance_sheet_id', attendanceSheet.id);
 
       if (!error && signatures) {
-        setRealTimeSignatures(signatures as AttendanceSignature[]);
+        setRealTimeSignatures(signatures as unknown as AttendanceSignature[]);
       }
     };
 

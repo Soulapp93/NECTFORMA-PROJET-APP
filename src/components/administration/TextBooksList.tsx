@@ -54,22 +54,22 @@ const TextBooksList: React.FC = () => {
     fetchData();
   }, []);
 
-  // Get unique years from textbooks
-  const uniqueYears = [...new Set(textBooks.map(tb => tb.academic_year))].sort().reverse();
+  // Get unique years from textbooks (using created_at year as fallback)
+  const uniqueYears = [...new Set(textBooks.map(tb => new Date(tb.created_at).getFullYear().toString()))].sort().reverse();
 
   const filteredTextBooks = textBooks.filter(textBook => {
     // Search filter
     const matchesSearch = !searchTerm || 
       textBook.formations?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      textBook.academic_year.toLowerCase().includes(searchTerm.toLowerCase());
+      textBook.title?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Formation filter
     const matchesFormation = selectedFormation === 'all' || 
       textBook.formation_id === selectedFormation;
     
     // Year filter
-    const matchesYear = selectedYear === 'all' || 
-      textBook.academic_year === selectedYear;
+    const textBookYear = new Date(textBook.created_at).getFullYear().toString();
+    const matchesYear = selectedYear === 'all' || textBookYear === selectedYear;
     
     return matchesSearch && matchesFormation && matchesYear;
   });
@@ -267,7 +267,7 @@ const TextBooksList: React.FC = () => {
                         Cahier de texte - {textBook.formations?.title || 'Formation'}
                       </h3>
                       <div className="text-sm text-gray-500 space-x-4">
-                        <span>Année {textBook.academic_year}</span>
+                        <span>{textBook.description || ''}</span>
                         <span>Formation: {textBook.formations?.title || 'N/A'}</span>
                       </div>
                     </div>
