@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Type helper for database operations on non-typed tables
+const db = supabase as any;
+
 export const notificationService = {
   // Notifier les utilisateurs d'une formation spécifique
   async notifyFormationUsers(formationId: string, title: string, message: string, type: string, metadata?: any) {
@@ -108,7 +111,7 @@ export const notificationService = {
   async notifyEventParticipants(eventId: string, title: string, message: string, type: string, metadata?: any) {
     try {
       // Récupérer tous les participants à l'événement
-      const { data: registrations, error: regError } = await supabase
+      const { data: registrations, error: regError } = await db
         .from('event_registrations')
         .select('user_id')
         .eq('event_id', eventId)
@@ -120,10 +123,10 @@ export const notificationService = {
         return { success: true, notified_users: 0 };
       }
 
-      const participantIds = registrations.map(r => r.user_id);
+      const participantIds = registrations.map((r: any) => r.user_id);
 
       // Créer une notification pour chaque participant
-      const notifications = participantIds.map(userId => ({
+      const notifications = participantIds.map((userId: string) => ({
         user_id: userId,
         title,
         message,

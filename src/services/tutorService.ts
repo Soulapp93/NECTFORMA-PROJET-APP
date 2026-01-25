@@ -155,7 +155,21 @@ export const tutorService = {
       .select('*');
 
     if (error) throw error;
-    return data || [];
+    // The view may not have all fields, cast appropriately
+    return (data || []).map((item: any) => ({
+      tutor_id: item.tutor_id,
+      tutor_first_name: item.tutor_first_name || '',
+      tutor_last_name: item.tutor_last_name || '',
+      tutor_email: item.tutor_email || '',
+      company_name: item.company_name || '',
+      position: item.position || '',
+      is_activated: item.is_activated ?? false,
+      student_id: item.student_id,
+      student_first_name: item.student_first_name || '',
+      student_last_name: item.student_last_name || '',
+      student_email: item.student_email || '',
+      is_active: item.is_active ?? true,
+    })) as TutorWithStudents[];
   },
 
   // Désactiver une assignation

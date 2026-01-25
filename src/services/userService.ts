@@ -147,7 +147,7 @@ export const userService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as User[];
   },
 
   async getUserById(id: string): Promise<User> {
@@ -158,7 +158,7 @@ export const userService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as User;
   },
 
   async createUser(userData: CreateUserData, formationIds: string[] = [], tutorData?: any): Promise<User> {
@@ -279,13 +279,16 @@ export const userService = {
       }
     }
 
-    return newUser;
+    return newUser as User;
   },
 
   async updateUser(id: string, userData: Partial<CreateUserData>, formationIds?: string[], tutorData?: any): Promise<User> {
+    const { role, ...safeUserData } = userData;
+    const updateData = role && role !== 'Tuteur' ? { ...safeUserData, role } : safeUserData;
+    
     const { data, error } = await supabase
       .from('users')
-      .update(userData)
+      .update(updateData as any)
       .eq('id', id)
       .select()
       .single();
@@ -413,7 +416,7 @@ export const userService = {
       }
     }
 
-    return data;
+    return data as User;
   },
 
   async getUserFormations(userId: string): Promise<string[]> {
