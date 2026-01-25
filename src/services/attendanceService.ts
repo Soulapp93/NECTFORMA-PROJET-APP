@@ -519,26 +519,14 @@ export const attendanceService = {
   async generateSignatureToken(attendanceSheetId: string): Promise<{ token: string; expiresAt: string }> {
     try {
       // Générer le token via la fonction SQL
-      const { data: tokenData, error: tokenError } = await supabase
-        .rpc('generate_signature_token');
+      const { data: tokenData, error: tokenError } = await (supabase
+        .rpc as any)('generate_signature_token', { sheet_id: attendanceSheetId });
 
       if (tokenError) throw tokenError;
 
       const token = tokenData as string;
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24); // Expire dans 24h
-
-      // Mettre à jour la feuille avec le token
-      const { error: updateError } = await supabase
-        .from('attendance_sheets')
-        .update({
-          signature_link_token: token,
-          signature_link_expires_at: expiresAt.toISOString(),
-          signature_link_sent_at: new Date().toISOString()
-        })
-        .eq('id', attendanceSheetId);
-
-      if (updateError) throw updateError;
 
       return { token, expiresAt: expiresAt.toISOString() };
     } catch (error) {
@@ -548,13 +536,17 @@ export const attendanceService = {
   },
 
   // Valider un token de signature
-  async validateSignatureToken(token: string) {
+  async validateSignatureToken(token: string): Promise<{ sheet_id: string; is_valid: boolean; error_message?: string } | null> {
     try {
-      const { data, error } = await supabase
-        .rpc('validate_signature_token', { token_param: token });
+      const { data, error } = await (supabase
+        .rpc as any)('validate_signature_token', { token_param: token });
 
       if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
+      
+      if (Array.isArray(data) && data.length > 0) {
+        return data[0] as { sheet_id: string; is_valid: boolean; error_message?: string };
+      }
+      return null;
     } catch (error) {
       console.error('Error validating signature token:', error);
       throw error;

@@ -40,9 +40,12 @@ export interface EventRegistration {
   status: 'Confirmée' | 'En attente' | 'Annulée';
 }
 
+// Type helper for database operations on non-typed tables
+const db = supabase as any;
+
 export const eventService = {
   async getEvents(): Promise<Event[]> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('events')
       .select('*')
       .order('start_date', { ascending: true });
@@ -52,11 +55,11 @@ export const eventService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []) as Event[];
   },
 
   async getEventById(eventId: string): Promise<Event> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('events')
       .select('*')
       .eq('id', eventId)
@@ -67,7 +70,7 @@ export const eventService = {
       throw error;
     }
 
-    return data;
+    return data as Event;
   },
 
   async createEvent(eventData: CreateEventData): Promise<Event> {
@@ -87,7 +90,7 @@ export const eventService = {
       throw new Error('Could not get user establishment');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('events')
       .insert([{
         ...eventData,
@@ -103,11 +106,11 @@ export const eventService = {
       throw error;
     }
 
-    return data;
+    return data as Event;
   },
 
   async updateEvent(eventId: string, eventData: Partial<CreateEventData>): Promise<Event> {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('events')
       .update({
         ...eventData,
@@ -122,17 +125,17 @@ export const eventService = {
       throw error;
     }
 
-    return data;
+    return data as Event;
   },
 
   async deleteEvent(eventId: string): Promise<void> {
     // First delete related registrations
-    await supabase
+    await db
       .from('event_registrations')
       .delete()
       .eq('event_id', eventId);
 
-    const { error } = await supabase
+    const { error } = await db
       .from('events')
       .delete()
       .eq('id', eventId);
@@ -150,7 +153,7 @@ export const eventService = {
     }
 
     // Check if already registered
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('event_registrations')
       .select('id')
       .eq('event_id', eventId)
@@ -161,7 +164,7 @@ export const eventService = {
       throw new Error('Already registered for this event');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('event_registrations')
       .insert([{
         event_id: eventId,
@@ -185,7 +188,7 @@ export const eventService = {
       throw new Error('User not authenticated');
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from('event_registrations')
       .delete()
       .eq('event_id', eventId)
@@ -198,7 +201,7 @@ export const eventService = {
   },
 
   async getEventRegistrations(eventId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('event_registrations')
       .select(`
         *,

@@ -1,7 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
 
-export type Assignment = Database['public']['Tables']['module_assignments']['Row'];
+export interface Assignment {
+  id: string;
+  module_id: string;
+  title: string;
+  description?: string | null;
+  assignment_type?: string | null;
+  due_date?: string | null;
+  max_points?: number | null;
+  is_published?: boolean | null;
+  created_by?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
 
 export interface AssignmentSubmission {
   id: string;
@@ -35,20 +46,20 @@ export interface AssignmentSubmission {
 }
 
 export const assignmentService = {
-  async getModuleAssignments(moduleId: string) {
-    const { data, error } = await supabase
-      .from('module_assignments')
+  async getModuleAssignments(moduleId: string): Promise<Assignment[]> {
+    const { data, error } = await (supabase
+      .from('module_assignments') as any)
       .select('*')
       .eq('module_id', moduleId)
       .order('created_at');
     
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
-  async createAssignment(assignment: Database['public']['Tables']['module_assignments']['Insert']) {
-    const { data, error } = await supabase
-      .from('module_assignments')
+  async createAssignment(assignment: Partial<Assignment> & { module_id: string; title: string }): Promise<Assignment> {
+    const { data, error } = await (supabase
+      .from('module_assignments') as any)
       .insert(assignment)
       .select()
       .single();
@@ -57,15 +68,15 @@ export const assignmentService = {
 
     // Notifier si le devoir est publié directement
     if (assignment.is_published) {
-      await this.notifyAssignmentPublication(data);
+      await this.notifyAssignmentPublication(data as Assignment);
     }
 
-    return data;
+    return data as Assignment;
   },
 
-  async updateAssignment(id: string, updates: Database['public']['Tables']['module_assignments']['Update']) {
-    const { data, error } = await supabase
-      .from('module_assignments')
+  async updateAssignment(id: string, updates: Partial<Assignment>): Promise<Assignment> {
+    const { data, error } = await (supabase
+      .from('module_assignments') as any)
       .update(updates)
       .eq('id', id)
       .select()
@@ -75,24 +86,24 @@ export const assignmentService = {
 
     // Notifier si le devoir vient d'être publié
     if (updates.is_published === true) {
-      await this.notifyAssignmentPublication(data);
+      await this.notifyAssignmentPublication(data as Assignment);
     }
 
-    return data;
+    return data as Assignment;
   },
 
   async deleteAssignment(id: string) {
-    const { error } = await supabase
-      .from('module_assignments')
+    const { error } = await (supabase
+      .from('module_assignments') as any)
       .delete()
       .eq('id', id);
 
     if (error) throw error;
   },
 
-  async addAssignmentFile(file: Database['public']['Tables']['assignment_files']['Insert']) {
-    const { data, error } = await supabase
-      .from('assignment_files')
+  async addAssignmentFile(file: { assignment_id: string; file_name: string; file_url: string; file_size?: number }) {
+    const { data, error } = await (supabase
+      .from('assignment_files') as any)
       .insert(file)
       .select()
       .single();
@@ -147,7 +158,7 @@ export const assignmentService = {
     return enrichedSubmissions;
   },
 
-  async submitAssignment(submission: Database['public']['Tables']['assignment_submissions']['Insert']) {
+  async submitAssignment(submission: { assignment_id: string; student_id: string; content?: string; status?: string }) {
     const { data, error } = await supabase
       .from('assignment_submissions')
       .insert(submission)
@@ -158,9 +169,9 @@ export const assignmentService = {
     return data;
   },
 
-  async addSubmissionFile(file: Database['public']['Tables']['submission_files']['Insert']) {
-    const { data, error } = await supabase
-      .from('submission_files')
+  async addSubmissionFile(file: { submission_id: string; file_name: string; file_url: string; file_size?: number }) {
+    const { data, error } = await (supabase
+      .from('submission_files') as any)
       .insert(file)
       .select()
       .single();
@@ -170,18 +181,18 @@ export const assignmentService = {
   },
 
   async getSubmissionFiles(submissionId: string) {
-    const { data, error } = await supabase
-      .from('submission_files')
+    const { data, error } = await (supabase
+      .from('submission_files') as any)
       .select('*')
       .eq('submission_id', submissionId);
     
     if (error) throw error;
-    return data;
+    return data || [];
   },
 
   async correctSubmission(
     submissionId: string,
-    correction: Omit<Database['public']['Tables']['assignment_corrections']['Insert'], 'submission_id'>
+    correction: { corrector_id: string; grade?: number | null; feedback?: string | null; published_at?: string | null }
   ) {
     // Check if correction exists
     const { data: existing } = await supabase
@@ -277,8 +288,8 @@ export const assignmentService = {
       const { notificationService } = await import('./notificationService');
       
       // Récupérer l'assignment
-      const { data: assignment } = await supabase
-        .from('module_assignments')
+      const { data: assignment } = await (supabase
+        .from('module_assignments') as any)
         .select('*')
         .eq('id', assignmentId)
         .single();
@@ -297,11 +308,11 @@ export const assignmentService = {
           await notificationService.notifyUser(
             submission.student_id,
             'Correction publiée',
-            `La correction du devoir "${assignment.title}" est disponible.`,
+            `La correction du devoir "${(assignment as Assignment).title}" est disponible.`,
             'correction',
             { 
               assignment_id: assignmentId,
-              module_id: assignment.module_id
+              module_id: (assignment as Assignment).module_id
             }
           );
         }
