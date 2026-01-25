@@ -14,16 +14,866 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance_sheets: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          date: string
+          end_time: string
+          formation_id: string
+          generated_at: string
+          id: string
+          instructor_id: string | null
+          is_open_for_signing: boolean | null
+          opened_at: string | null
+          qr_code: string | null
+          room: string | null
+          schedule_slot_id: string
+          session_type: string | null
+          signature_link_expires_at: string | null
+          signature_link_sent_at: string | null
+          signature_link_token: string | null
+          start_time: string
+          status: string
+          title: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          date: string
+          end_time: string
+          formation_id: string
+          generated_at?: string
+          id?: string
+          instructor_id?: string | null
+          is_open_for_signing?: boolean | null
+          opened_at?: string | null
+          qr_code?: string | null
+          room?: string | null
+          schedule_slot_id: string
+          session_type?: string | null
+          signature_link_expires_at?: string | null
+          signature_link_sent_at?: string | null
+          signature_link_token?: string | null
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          date?: string
+          end_time?: string
+          formation_id?: string
+          generated_at?: string
+          id?: string
+          instructor_id?: string | null
+          is_open_for_signing?: boolean | null
+          opened_at?: string | null
+          qr_code?: string | null
+          room?: string | null
+          schedule_slot_id?: string
+          session_type?: string | null
+          signature_link_expires_at?: string | null
+          signature_link_sent_at?: string | null
+          signature_link_token?: string | null
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sheets_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sheets_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sheets_schedule_slot_id_fkey"
+            columns: ["schedule_slot_id"]
+            isOneToOne: true
+            referencedRelation: "schedule_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sheets_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_signatures: {
+        Row: {
+          absence_reason: string | null
+          absence_reason_type: string | null
+          attendance_sheet_id: string
+          created_at: string
+          id: string
+          present: boolean
+          signature_data: string | null
+          signed_at: string
+          updated_at: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          absence_reason?: string | null
+          absence_reason_type?: string | null
+          attendance_sheet_id: string
+          created_at?: string
+          id?: string
+          present?: boolean
+          signature_data?: string | null
+          signed_at?: string
+          updated_at?: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          absence_reason?: string | null
+          absence_reason_type?: string | null
+          attendance_sheet_id?: string
+          created_at?: string
+          id?: string
+          present?: boolean
+          signature_data?: string | null
+          signed_at?: string
+          updated_at?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_signatures_attendance_sheet_id_fkey"
+            columns: ["attendance_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishments: {
+        Row: {
+          address: string | null
+          created_at: string
+          director: string | null
+          email: string
+          id: string
+          logo_url: string | null
+          name: string
+          number_of_instructors: string | null
+          number_of_students: string | null
+          phone: string | null
+          siret: string | null
+          type: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          director?: string | null
+          email: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          number_of_instructors?: string | null
+          number_of_students?: string | null
+          phone?: string | null
+          siret?: string | null
+          type: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          director?: string | null
+          email?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          number_of_instructors?: string | null
+          number_of_students?: string | null
+          phone?: string | null
+          siret?: string | null
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      formation_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_hours: number
+          formation_id: string
+          id: string
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_hours?: number
+          formation_id: string
+          id?: string
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_hours?: number
+          formation_id?: string
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_modules_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formations: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          duration: number
+          end_date: string
+          establishment_id: string
+          id: string
+          level: string
+          max_students: number
+          price: number | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          duration: number
+          end_date: string
+          establishment_id: string
+          id?: string
+          level: string
+          max_students?: number
+          price?: number | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: number
+          end_date?: string
+          establishment_id?: string
+          id?: string
+          level?: string
+          max_students?: number
+          price?: number | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          establishment_id: string
+          expires_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["invitation_status"]
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          establishment_id: string
+          expires_at: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          establishment_id?: string
+          expires_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: Database["public"]["Enums"]["invitation_status"]
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      schedule_slots: {
+        Row: {
+          color: string | null
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          instructor_id: string | null
+          module_id: string | null
+          notes: string | null
+          room: string | null
+          schedule_id: string
+          session_type: string | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          instructor_id?: string | null
+          module_id?: string | null
+          notes?: string | null
+          room?: string | null
+          schedule_id: string
+          session_type?: string | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          instructor_id?: string | null
+          module_id?: string | null
+          notes?: string | null
+          room?: string | null
+          schedule_id?: string
+          session_type?: string | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_slots_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_slots_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "formation_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_slots_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedules: {
+        Row: {
+          created_at: string
+          description: string | null
+          formation_id: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          formation_id: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          formation_id?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      text_book_entries: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          date: string
+          homework: string | null
+          id: string
+          objectives: string | null
+          schedule_slot_id: string | null
+          text_book_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          date: string
+          homework?: string | null
+          id?: string
+          objectives?: string | null
+          schedule_slot_id?: string | null
+          text_book_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          homework?: string | null
+          id?: string
+          objectives?: string | null
+          schedule_slot_id?: string | null
+          text_book_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "text_book_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "text_book_entries_schedule_slot_id_fkey"
+            columns: ["schedule_slot_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "text_book_entries_text_book_id_fkey"
+            columns: ["text_book_id"]
+            isOneToOne: false
+            referencedRelation: "text_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      text_books: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          formation_id: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          formation_id: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          formation_id?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "text_books_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "text_books_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_student_assignments: {
+        Row: {
+          assigned_at: string
+          id: string
+          is_active: boolean
+          student_id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          id?: string
+          is_active?: boolean
+          student_id: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          id?: string
+          is_active?: boolean
+          student_id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_student_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_student_assignments_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "tutors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutors: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string
+          establishment_id: string
+          first_name: string
+          id: string
+          is_activated: boolean
+          last_name: string
+          phone: string | null
+          position: string | null
+          profile_photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email: string
+          establishment_id: string
+          first_name: string
+          id?: string
+          is_activated?: boolean
+          last_name: string
+          phone?: string | null
+          position?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          establishment_id?: string
+          first_name?: string
+          id?: string
+          is_activated?: boolean
+          last_name?: string
+          phone?: string | null
+          position?: string | null
+          profile_photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutors_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activation_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_formation_assignments: {
+        Row: {
+          assigned_at: string
+          formation_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          formation_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          formation_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_formation_assignments_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_formation_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_signatures: {
+        Row: {
+          created_at: string
+          id: string
+          signature_data: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          signature_data: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          signature_data?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          establishment_id: string
+          first_name: string
+          id: string
+          is_activated: boolean
+          last_name: string
+          phone: string | null
+          profile_photo_url: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          establishment_id: string
+          first_name: string
+          id?: string
+          is_activated?: boolean
+          last_name: string
+          phone?: string | null
+          profile_photo_url?: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          establishment_id?: string
+          first_name?: string
+          id?: string
+          is_activated?: boolean
+          last_name?: string
+          phone?: string | null
+          profile_photo_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_establishment: { Args: never; Returns: string }
+      get_current_user_role: { Args: never; Returns: string }
+      get_my_context: { Args: never; Returns: Json }
+      get_my_profile: { Args: never; Returns: Json }
+      is_current_user_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      invitation_status: "pending" | "accepted" | "expired" | "cancelled"
+      user_role: "AdminPrincipal" | "Admin" | "Formateur" | "Étudiant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +1000,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      invitation_status: ["pending", "accepted", "expired", "cancelled"],
+      user_role: ["AdminPrincipal", "Admin", "Formateur", "Étudiant"],
+    },
   },
 } as const
