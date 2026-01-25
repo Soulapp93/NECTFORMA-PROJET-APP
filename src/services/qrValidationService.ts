@@ -1,5 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 
+// Type helper for database operations on non-typed RPCs
+const db = supabase as any;
+
 interface QRValidationResult {
   is_valid: boolean;
   sheet_id: string | null;
@@ -32,7 +35,7 @@ export async function validateQRCodeSecure(
     }
 
     // Appel de la fonction de validation sécurisée
-    const { data, error } = await supabase.rpc('validate_qr_code_secure', {
+    const { data, error } = await db.rpc('validate_qr_code_secure', {
       code_param: code,
       user_id_param: userId
     });
@@ -63,7 +66,7 @@ export async function checkRateLimit(
   ipAddress: string = 'unknown'
 ): Promise<RateLimitResult> {
   try {
-    const { data, error } = await supabase.rpc('check_qr_rate_limit', {
+    const { data, error } = await db.rpc('check_qr_rate_limit', {
       user_id_param: userId,
       ip_address_param: ipAddress
     });
@@ -94,7 +97,7 @@ export async function recordValidationAttempt(
   success: boolean
 ): Promise<void> {
   try {
-    await supabase.from('qr_validation_attempts').insert({
+    await db.from('qr_validation_attempts').insert({
       user_id: userId,
       ip_address: ipAddress,
       success,
@@ -115,11 +118,11 @@ export async function logAttendanceAction(
   metadata?: Record<string, any>
 ): Promise<void> {
   try {
-    await supabase.rpc('log_attendance_action', {
+    await db.rpc('log_attendance_action', {
       sheet_id: sheetId,
       user_id: userId,
       action_type: action,
-      ip_addr: null, // Pas accessible depuis le client
+      ip_addr: null,
       user_agent_val: navigator.userAgent,
       meta: metadata ? JSON.stringify(metadata) : null
     });

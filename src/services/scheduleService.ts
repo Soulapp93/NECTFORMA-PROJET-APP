@@ -4,8 +4,9 @@ export interface Schedule {
   id: string;
   formation_id: string;
   title: string;
-  academic_year: string;
-  status: string;
+  description?: string;
+  academic_year?: string;
+  status?: string;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -50,7 +51,7 @@ export const scheduleService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Schedule[];
   },
 
   // Get schedule by ID
@@ -68,7 +69,7 @@ export const scheduleService = {
       if (error.code === 'PGRST116') return null;
       throw error;
     }
-    return data;
+    return data as Schedule;
   },
 
   // Create new schedule
@@ -83,7 +84,7 @@ export const scheduleService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Schedule;
   },
 
   // Update schedule
@@ -100,15 +101,17 @@ export const scheduleService = {
 
     if (error) throw error;
 
+    const schedule = data as Schedule;
+
     // Si l'emploi du temps est publié pour la première fois, notifier
     if (updates.status === 'Publié') {
-      await this.notifySchedulePublication(data);
-    } else if (data.status === 'Publié') {
+      await this.notifySchedulePublication(schedule);
+    } else if (schedule.status === 'Publié') {
       // Si l'emploi du temps est déjà publié et qu'il y a des modifications, notifier
-      await this.notifyScheduleUpdate(data);
+      await this.notifyScheduleUpdate(schedule);
     }
 
-    return data;
+    return schedule;
   },
 
   // Delete schedule
@@ -179,9 +182,11 @@ export const scheduleService = {
       .eq('id', data.schedule_id)
       .single();
 
+    const schedule = scheduleData as Schedule | null;
+
     // Si l'emploi du temps est publié, notifier les modifications
-    if (scheduleData && scheduleData.status === 'Publié') {
-      await this.notifyScheduleUpdate(scheduleData);
+    if (schedule && schedule.status === 'Publié') {
+      await this.notifyScheduleUpdate(schedule);
     }
 
     return data;

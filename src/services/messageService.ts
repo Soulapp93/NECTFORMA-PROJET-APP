@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Type helper for database operations on non-typed tables
 const db = supabase as any;
+
 export interface Message {
   id: string;
   sender_id: string;
@@ -53,7 +54,7 @@ export interface CreateMessageData {
   is_draft?: boolean;
   recipients: {
     type: 'user' | 'formation' | 'all_instructors';
-    ids?: string[]; // user_ids for individual, formation_ids for groups
+    ids?: string[];
   };
   attachments?: File[] | UploadedAttachment[];
 }
@@ -61,12 +62,11 @@ export interface CreateMessageData {
 export const messageService = {
   async createMessage(messageData: CreateMessageData): Promise<Message> {
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
       // Create the message
-      const { data: message, error: messageError } = await supabase
+      const { data: message, error: messageError } = await db
         .from('messages')
         .insert({
           sender_id: user.id,
@@ -102,7 +102,7 @@ export const messageService = {
       }
 
       if (recipients.length > 0) {
-        const { error: recipientsError } = await supabase
+        const { error: recipientsError } = await db
           .from('message_recipients')
           .insert(recipients);
 
@@ -111,12 +111,10 @@ export const messageService = {
 
       // Handle attachments if any
       if (messageData.attachments && messageData.attachments.length > 0) {
-        // Check if attachments are Files or already uploaded
         const firstAttachment = messageData.attachments[0];
         if (firstAttachment instanceof File) {
           await this.uploadAttachments(message.id, messageData.attachments as File[]);
         } else {
-          // Already uploaded attachments
           await this.saveUploadedAttachments(message.id, messageData.attachments as UploadedAttachment[]);
         }
       }
@@ -126,7 +124,7 @@ export const messageService = {
         await this.notifyMessageRecipients(message, messageData.recipients);
       }
 
-      return message;
+      return message as Message;
     } catch (error) {
       console.error('Erreur lors de la création du message:', error);
       throw error;
@@ -136,23 +134,20 @@ export const messageService = {
   async uploadAttachments(messageId: string, files: File[]): Promise<void> {
     try {
       const attachmentPromises = files.map(async (file) => {
-        // Upload file to Supabase storage
         const fileExt = file.name.split('.').pop();
         const fileName = `${messageId}/${Date.now()}.${fileExt}`;
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('module-files') // Using existing bucket
+        const { error: uploadError } = await supabase.storage
+          .from('module-files')
           .upload(`messages/${fileName}`, file);
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('module-files')
           .getPublicUrl(`messages/${fileName}`);
 
-        // Save attachment record
-        const { error: attachmentError } = await supabase
+        const { error: attachmentError } = await db
           .from('message_attachments')
           .insert({
             message_id: messageId,
@@ -181,7 +176,7 @@ export const messageService = {
         file_size: att.file_size
       }));
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_attachments')
         .insert(attachmentRecords);
 
@@ -194,13 +189,13 @@ export const messageService = {
 
   async getMessages(): Promise<Message[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as Message[];
     } catch (error) {
       console.error('Erreur lors de la récupération des messages:', error);
       throw error;
@@ -209,14 +204,14 @@ export const messageService = {
 
   async getMessageById(id: string): Promise<Message | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('messages')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data as Message | null;
     } catch (error) {
       console.error('Erreur lors de la récupération du message:', error);
       throw error;
@@ -228,7 +223,7 @@ export const messageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .update({ 
           is_read: true, 
@@ -244,7 +239,6 @@ export const messageService = {
     }
   },
 
-  // Notifier les destinataires d'un nouveau message
   async notifyMessageRecipients(message: Message, recipients: CreateMessageData['recipients']) {
     try {
       const { notificationService } = await import('./notificationService');
@@ -287,8 +281,7 @@ export const messageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      // Get current status
-      const { data: current } = await supabase
+      const { data: current } = await db
         .from('message_recipients')
         .select('is_favorite')
         .eq('message_id', messageId)
@@ -297,7 +290,7 @@ export const messageService = {
 
       const newStatus = !current?.is_favorite;
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .update({ is_favorite: newStatus })
         .eq('message_id', messageId)
@@ -311,13 +304,12 @@ export const messageService = {
     }
   },
 
-  // Toggle archive status
   async toggleArchive(messageId: string): Promise<boolean> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { data: current } = await supabase
+      const { data: current } = await db
         .from('message_recipients')
         .select('is_archived')
         .eq('message_id', messageId)
@@ -326,7 +318,7 @@ export const messageService = {
 
       const newStatus = !current?.is_archived;
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .update({ is_archived: newStatus })
         .eq('message_id', messageId)
@@ -340,13 +332,12 @@ export const messageService = {
     }
   },
 
-  // Move to trash (soft delete)
   async moveToTrash(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .update({ 
           is_deleted: true,
@@ -362,13 +353,12 @@ export const messageService = {
     }
   },
 
-  // Restore from trash
   async restoreFromTrash(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .update({ 
           is_deleted: false,
@@ -384,13 +374,12 @@ export const messageService = {
     }
   },
 
-  // Permanently delete
   async permanentlyDelete(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('message_recipients')
         .delete()
         .eq('message_id', messageId)
@@ -403,13 +392,12 @@ export const messageService = {
     }
   },
 
-  // Delete sent message (for sender)
   async deleteSentMessage(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('messages')
         .update({ 
           is_deleted: true,
@@ -425,13 +413,12 @@ export const messageService = {
     }
   },
 
-  // Restore sent message
   async restoreSentMessage(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      const { error } = await supabase
+      const { error } = await db
         .from('messages')
         .update({ 
           is_deleted: false,
@@ -447,26 +434,25 @@ export const messageService = {
     }
   },
 
-  // Permanently delete sent message
   async permanentlyDeleteSentMessage(messageId: string): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
       // Delete attachments first
-      await supabase
+      await db
         .from('message_attachments')
         .delete()
         .eq('message_id', messageId);
 
       // Delete recipients
-      await supabase
+      await db
         .from('message_recipients')
         .delete()
         .eq('message_id', messageId);
 
       // Delete message
-      const { error } = await supabase
+      const { error } = await db
         .from('messages')
         .delete()
         .eq('id', messageId)
@@ -479,13 +465,12 @@ export const messageService = {
     }
   },
 
-  // Get message recipient info for current user
   async getMessageRecipientInfo(messageId: string): Promise<MessageRecipient | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('message_recipients')
         .select('*')
         .eq('message_id', messageId)
@@ -500,24 +485,20 @@ export const messageService = {
     }
   },
 
-  // Forward message to other users
   async forwardMessage(originalMessageId: string, recipientIds: string[]): Promise<Message> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
 
-      // Get original message
       const originalMessage = await this.getMessageById(originalMessageId);
       if (!originalMessage) throw new Error('Message original non trouvé');
 
-      // Get original attachments
-      const { data: attachments } = await supabase
+      const { data: attachments } = await db
         .from('message_attachments')
         .select('*')
         .eq('message_id', originalMessageId);
 
-      // Create forwarded message
-      const { data: newMessage, error: messageError } = await supabase
+      const { data: newMessage, error: messageError } = await db
         .from('messages')
         .insert({
           sender_id: user.id,
@@ -531,22 +512,20 @@ export const messageService = {
 
       if (messageError) throw messageError;
 
-      // Create recipients
       const recipients = recipientIds.map(id => ({
         message_id: newMessage.id,
         recipient_id: id,
         recipient_type: 'user' as const
       }));
 
-      const { error: recipientsError } = await supabase
+      const { error: recipientsError } = await db
         .from('message_recipients')
         .insert(recipients);
 
       if (recipientsError) throw recipientsError;
 
-      // Copy attachments if any
       if (attachments && attachments.length > 0) {
-        const newAttachments = attachments.map(att => ({
+        const newAttachments = attachments.map((att: any) => ({
           message_id: newMessage.id,
           file_name: att.file_name,
           file_url: att.file_url,
@@ -554,44 +533,42 @@ export const messageService = {
           content_type: att.content_type
         }));
 
-        await supabase.from('message_attachments').insert(newAttachments);
+        await db.from('message_attachments').insert(newAttachments);
       }
 
-      // Notify recipients
-      await this.notifyMessageRecipients(newMessage, { type: 'user', ids: recipientIds });
+      await this.notifyMessageRecipients(newMessage as Message, { type: 'user', ids: recipientIds });
 
-      return newMessage;
+      return newMessage as Message;
     } catch (error) {
       console.error('Erreur lors du transfert:', error);
       throw error;
     }
   },
 
-  // Get messages with recipient info
   async getMessagesWithRecipientInfo(): Promise<(Message & { recipientInfo?: MessageRecipient })[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const { data: messages, error: messagesError } = await supabase
+      const { data: messages, error: messagesError } = await db
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (messagesError) throw messagesError;
 
-      const { data: recipientInfos } = await supabase
+      const { data: recipientInfos } = await db
         .from('message_recipients')
         .select('*')
         .eq('recipient_id', user.id);
 
       const recipientMap = new Map(
-        (recipientInfos || []).map(r => [r.message_id, r as MessageRecipient])
+        (recipientInfos || []).map((r: any) => [r.message_id, r as MessageRecipient])
       );
 
-      return (messages || []).map(msg => ({
+      return ((messages || []) as Message[]).map(msg => ({
         ...msg,
-        recipientInfo: recipientMap.get(msg.id)
+        recipientInfo: recipientMap.get(msg.id) as MessageRecipient | undefined
       })) as (Message & { recipientInfo?: MessageRecipient })[];
     } catch (error) {
       console.error('Erreur:', error);

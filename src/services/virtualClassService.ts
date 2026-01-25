@@ -1,7 +1,26 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
 
-export type VirtualClass = Database['public']['Tables']['virtual_classes']['Row'] & {
+// Type helper for database operations on non-typed tables
+const db = supabase as any;
+
+export interface VirtualClass {
+  id: string;
+  title: string;
+  description?: string;
+  formation_id: string;
+  instructor_id: string;
+  module_id?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  room_url?: string;
+  max_participants?: number;
+  current_participants?: number;
+  recording_enabled?: boolean;
+  recording_url?: string;
+  created_at: string;
+  updated_at: string;
   instructor?: {
     id: string;
     first_name: string;
@@ -14,17 +33,47 @@ export type VirtualClass = Database['public']['Tables']['virtual_classes']['Row'
     color: string;
   };
   participants_count?: number;
-};
+  materials?: VirtualClassMaterial[];
+}
 
-export type VirtualClassParticipant = Database['public']['Tables']['virtual_class_participants']['Row'];
-export type VirtualClassMaterial = Database['public']['Tables']['virtual_class_materials']['Row'];
+export interface VirtualClassParticipant {
+  id: string;
+  virtual_class_id: string;
+  user_id: string;
+  status: string;
+  joined_at?: string;
+  left_at?: string;
+  created_at: string;
+}
+
+export interface VirtualClassMaterial {
+  id: string;
+  virtual_class_id: string;
+  file_name: string;
+  file_url: string;
+  file_size?: number;
+  file_type?: string;
+  created_at: string;
+}
+
+export interface CreateVirtualClassData {
+  title: string;
+  description?: string;
+  formation_id: string;
+  instructor_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status?: string;
+  room_url?: string;
+  max_participants?: number;
+}
 
 export const virtualClassService = {
-  async getVirtualClasses() {
+  async getVirtualClasses(): Promise<VirtualClass[]> {
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
 
-    // Récupérer l'utilisateur si authentifié (sinon, on ne filtre pas et on retourne tout)
     let user: { role?: string | null; establishment_id?: string | null } | null = null;
     if (userId) {
       const { data } = await supabase
@@ -35,65 +84,48 @@ export const virtualClassService = {
       user = data ?? null;
     }
 
-    let query = supabase
+    const { data, error } = await db
       .from('virtual_classes')
       .select(`
         *,
         instructor:users!instructor_id(id, first_name, last_name, email),
-        formation:formations!formation_id(id, title, color),
-        participants:virtual_class_participants(count)
-      `);
-
-    // Tous les utilisateurs peuvent voir toutes les classes virtuelles
-    // Pas de filtrage par rôle ou formation - accès universel
-    
-    query = query
+        formation:formations!formation_id(id, title, color)
+      `)
       .order('date', { ascending: true })
       .order('start_time', { ascending: true });
 
-    const { data, error } = await query;
-
     if (error) throw error;
-    return data as VirtualClass[];
+    return (data || []) as VirtualClass[];
   },
 
-  async getVirtualClassById(id: string) {
-    const { data, error } = await supabase
+  async getVirtualClassById(id: string): Promise<VirtualClass | null> {
+    const { data, error } = await db
       .from('virtual_classes')
       .select(`
         *,
         instructor:users!instructor_id(id, first_name, last_name, email),
-        formation:formations!formation_id(id, title, color),
-        participants:virtual_class_participants(
-          id,
-          user_id,
-          status,
-          joined_at,
-          left_at,
-          user:users(first_name, last_name, email)
-        ),
-        materials:virtual_class_materials(*)
+        formation:formations!formation_id(id, title, color)
       `)
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data;
+    return data as VirtualClass;
   },
 
-  async createVirtualClass(classData: Database['public']['Tables']['virtual_classes']['Insert']) {
-    const { data, error } = await supabase
+  async createVirtualClass(classData: CreateVirtualClassData): Promise<VirtualClass> {
+    const { data, error } = await db
       .from('virtual_classes')
       .insert(classData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as VirtualClass;
   },
 
-  async updateVirtualClass(id: string, updates: Database['public']['Tables']['virtual_classes']['Update']) {
-    const { data, error } = await supabase
+  async updateVirtualClass(id: string, updates: Partial<CreateVirtualClassData>): Promise<VirtualClass> {
+    const { data, error } = await db
       .from('virtual_classes')
       .update(updates)
       .eq('id', id)
@@ -101,11 +133,11 @@ export const virtualClassService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as VirtualClass;
   },
 
-  async deleteVirtualClass(id: string) {
-    const { error } = await supabase
+  async deleteVirtualClass(id: string): Promise<void> {
+    const { error } = await db
       .from('virtual_classes')
       .delete()
       .eq('id', id);
@@ -113,8 +145,8 @@ export const virtualClassService = {
     if (error) throw error;
   },
 
-  async joinClass(classId: string, userId: string) {
-    const { data, error } = await supabase
+  async joinClass(classId: string, userId: string): Promise<VirtualClassParticipant> {
+    const { data, error } = await db
       .from('virtual_class_participants')
       .insert({
         virtual_class_id: classId,
@@ -126,13 +158,12 @@ export const virtualClassService = {
 
     if (error) throw error;
 
-    // Update participant count
     await this.updateParticipantCount(classId);
-    return data;
+    return data as VirtualClassParticipant;
   },
 
-  async leaveClass(classId: string, userId: string) {
-    const { error } = await supabase
+  async leaveClass(classId: string, userId: string): Promise<void> {
+    const { error } = await db
       .from('virtual_class_participants')
       .delete()
       .eq('virtual_class_id', classId)
@@ -140,12 +171,11 @@ export const virtualClassService = {
 
     if (error) throw error;
 
-    // Update participant count
     await this.updateParticipantCount(classId);
   },
 
-  async updateParticipantStatus(classId: string, userId: string, status: 'Présent' | 'Absent') {
-    const { data, error } = await supabase
+  async updateParticipantStatus(classId: string, userId: string, status: 'Présent' | 'Absent'): Promise<VirtualClassParticipant> {
+    const { data, error } = await db
       .from('virtual_class_participants')
       .update({ 
         status,
@@ -158,31 +188,31 @@ export const virtualClassService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as VirtualClassParticipant;
   },
 
-  async updateParticipantCount(classId: string) {
-    const { count } = await supabase
+  async updateParticipantCount(classId: string): Promise<void> {
+    const { count } = await db
       .from('virtual_class_participants')
       .select('*', { count: 'exact', head: true })
       .eq('virtual_class_id', classId)
       .eq('status', 'Inscrit');
 
-    await supabase
+    await db
       .from('virtual_classes')
       .update({ current_participants: count || 0 })
       .eq('id', classId);
   },
 
-  async addMaterial(material: Database['public']['Tables']['virtual_class_materials']['Insert']) {
-    const { data, error } = await supabase
+  async addMaterial(material: Omit<VirtualClassMaterial, 'id' | 'created_at'>): Promise<VirtualClassMaterial> {
+    const { data, error } = await db
       .from('virtual_class_materials')
       .insert(material)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as VirtualClassMaterial;
   },
 
   async getInstructors() {
