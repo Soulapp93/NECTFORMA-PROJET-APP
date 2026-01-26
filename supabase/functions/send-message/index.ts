@@ -63,8 +63,6 @@ serve(async (req) => {
     console.log("Authenticated user:", userId);
 
     // Service role client for privileged writes (bypasses RLS).
-    // The DB trigger function is configured to allow service_role inserts as long
-    // as sender_id is explicitly provided.
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -80,7 +78,11 @@ serve(async (req) => {
       );
     }
 
-    // 1) Insert message
+    // Check if this is a scheduled message (future date)
+    const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
+    console.log("Is scheduled message:", isScheduled, "scheduled_for:", scheduled_for);
+
+    // 1) Insert message with scheduled_recipients if scheduled
     const { data: message, error: messageError } = await supabaseAdmin
       .from("messages")
       .insert({
@@ -90,6 +92,8 @@ serve(async (req) => {
         is_draft: is_draft ?? false,
         scheduled_for: scheduled_for ?? null,
         attachment_count: attachments?.length ?? 0,
+        // Store recipients for scheduled messages so CRON job can deliver later
+        scheduled_recipients: isScheduled ? recipients : null,
       })
       .select()
       .single();
@@ -103,34 +107,25 @@ serve(async (req) => {
 
     // Resolve sender establishment to ensure group sends stay tenant-isolated.
     const resolveSenderEstablishmentId = async (): Promise<string | null> => {
-      // Primary path: users table
-      const { data: u, error: uErr } = await supabaseAdmin
+      const { data: u } = await supabaseAdmin
         .from("users")
         .select("establishment_id")
         .eq("id", userId)
         .maybeSingle();
-      if (uErr) {
-        console.error("Resolve sender establishment (users) error:", uErr);
-      }
       if (u?.establishment_id) return u.establishment_id as string;
 
-      // Fallback path: tutors table
-      const { data: t, error: tErr } = await supabaseAdmin
+      const { data: t } = await supabaseAdmin
         .from("tutors")
         .select("establishment_id")
         .eq("id", userId)
         .maybeSingle();
-      if (tErr) {
-        console.error("Resolve sender establishment (tutors) error:", tErr);
-      }
       return (t?.establishment_id as string) ?? null;
     };
 
     // 2) Build recipients list
     const recipientRows: Array<{ message_id: string; recipient_id?: string; recipient_type: string; is_read?: boolean; read_at?: string | null }> = [];
 
-    // Always add a "sender copy" so the sender can reliably see the message in "Envoyés"
-    // even if their access relies on recipient-based logic.
+    // Always add a "sender copy" so the sender can see the message in "Envoyés" or "Programmés"
     recipientRows.push({
       message_id: message.id,
       recipient_id: userId,
@@ -139,83 +134,63 @@ serve(async (req) => {
       read_at: new Date().toISOString(),
     });
 
-    const addUserRecipients = (userIds: string[]) => {
-      const unique = Array.from(new Set(userIds)).filter((id) => id && id !== userId);
-      for (const rid of unique) {
-        recipientRows.push({
-          message_id: message.id,
-          recipient_id: rid,
-          recipient_type: "user",
-          is_read: false,
-          read_at: null,
-        });
-      }
-    };
+    // For scheduled messages, DON'T add actual recipients now - they'll be added by CRON job
+    if (!isScheduled) {
+      const addUserRecipients = (userIds: string[]) => {
+        const unique = Array.from(new Set(userIds)).filter((id) => id && id !== userId);
+        for (const rid of unique) {
+          recipientRows.push({
+            message_id: message.id,
+            recipient_id: rid,
+            recipient_type: "user",
+            is_read: false,
+            read_at: null,
+          });
+        }
+      };
 
-    if (recipients.type === "all_instructors") {
-      const establishmentId = await resolveSenderEstablishmentId();
+      if (recipients.type === "all_instructors") {
+        const establishmentId = await resolveSenderEstablishmentId();
 
-      if (!establishmentId) {
-        console.error("Could not resolve establishment for sender; cannot target instructors safely");
-        // Still save the message for "Envoyés" - just no recipients besides sender copy
-        console.log("No establishment resolved, message saved without additional recipients.");
-      } else {
-        // Only target users with role 'Formateur' (not Admins)
-        const { data: instructors, error: instructorsErr } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .eq("establishment_id", establishmentId)
-          .eq("role", "Formateur");
+        if (establishmentId) {
+          const { data: instructors } = await supabaseAdmin
+            .from("users")
+            .select("id")
+            .eq("establishment_id", establishmentId)
+            .eq("role", "Formateur");
 
-        if (instructorsErr) {
-          console.error("Select instructors error:", instructorsErr);
-          // Continue anyway - message will be saved
-        } else {
           console.log(`Found ${(instructors || []).length} instructors to send to`);
           addUserRecipients((instructors || []).map((i: any) => i.id as string));
         }
-      }
-    } else if (recipients.type === "formation" && recipients.ids?.length) {
-      const establishmentId = await resolveSenderEstablishmentId();
-      
-      // Expand formation -> assigned students only (role = 'Étudiant')
-      // First get user_ids from user_formation_assignments
-      const { data: assignments, error: assignErr } = await supabaseAdmin
-        .from("user_formation_assignments")
-        .select("user_id")
-        .in("formation_id", recipients.ids);
+      } else if (recipients.type === "formation" && recipients.ids?.length) {
+        const { data: assignments } = await supabaseAdmin
+          .from("user_formation_assignments")
+          .select("user_id")
+          .in("formation_id", recipients.ids);
 
-      if (assignErr) {
-        console.error("Select formation assignments error:", assignErr);
-        // Continue anyway - message saved
-      } else if (assignments && assignments.length > 0) {
-        const assignedUserIds = assignments.map((a: any) => a.user_id as string);
-        
-        // Filter to only students (role = 'Étudiant') within the same establishment
-        const { data: students, error: studentsErr } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .in("id", assignedUserIds)
-          .eq("role", "Étudiant");
+        if (assignments && assignments.length > 0) {
+          const assignedUserIds = assignments.map((a: any) => a.user_id as string);
+          
+          const { data: students } = await supabaseAdmin
+            .from("users")
+            .select("id")
+            .in("id", assignedUserIds)
+            .eq("role", "Étudiant");
 
-        if (studentsErr) {
-          console.error("Filter students error:", studentsErr);
-        } else {
           console.log(`Found ${(students || []).length} students in formations to send to`);
           addUserRecipients((students || []).map((s: any) => s.id as string));
         }
-      } else {
-        console.log("No students assigned to selected formations");
+      } else if (recipients.type === "user" && recipients.ids?.length) {
+        addUserRecipients(recipients.ids);
       }
-    } else if (recipients.type === "user" && recipients.ids?.length) {
-      addUserRecipients(recipients.ids);
+    } else {
+      console.log("Scheduled message - recipients will be created by CRON job at scheduled time");
     }
 
     if (recipientRows.length > 0) {
       const { error: recipientError } = await supabaseAdmin.from("message_recipients").insert(recipientRows);
       if (recipientError) {
         console.error("Insert recipients error:", recipientError);
-        // Rollback: delete the message
         await supabaseAdmin.from("messages").delete().eq("id", message.id);
         return new Response(JSON.stringify({ error: recipientError.message }), { status: 500, headers: jsonHeaders });
       }
@@ -235,7 +210,6 @@ serve(async (req) => {
       const { error: attachError } = await supabaseAdmin.from("message_attachments").insert(attachmentRows);
       if (attachError) {
         console.error("Insert attachments error:", attachError);
-        // Rollback
         await supabaseAdmin.from("message_recipients").delete().eq("message_id", message.id);
         await supabaseAdmin.from("messages").delete().eq("id", message.id);
         return new Response(JSON.stringify({ error: attachError.message }), { status: 500, headers: jsonHeaders });
@@ -243,7 +217,7 @@ serve(async (req) => {
       console.log("Attachments created:", attachmentRows.length);
     }
 
-    return new Response(JSON.stringify({ success: true, message }), { status: 200, headers: jsonHeaders });
+    return new Response(JSON.stringify({ success: true, message, isScheduled }), { status: 200, headers: jsonHeaders });
   } catch (err) {
     console.error("Unexpected error:", err);
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: jsonHeaders });
