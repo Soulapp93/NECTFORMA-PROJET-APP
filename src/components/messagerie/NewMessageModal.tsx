@@ -182,7 +182,8 @@ const NewMessageModal = ({ isOpen, onClose, replyTo }: NewMessageModalProps) => 
       await sendMessage({
         subject,
         content: message,
-        scheduled_for: scheduleDelivery && scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
+        // scheduledDate is already in ISO format with timezone from DateTimePicker
+        scheduled_for: scheduleDelivery && scheduledDate ? scheduledDate : undefined,
         is_draft: isDraft,
         recipients,
         attachments
@@ -470,10 +471,9 @@ const NewMessageModal = ({ isOpen, onClose, replyTo }: NewMessageModalProps) => 
                   value={scheduledDate}
                   onChange={(value) => setScheduledDate(value)}
                   placeholder="Sélectionner date et heure"
+                  minDate={new Date()}
+                  showTimezone={true}
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Le message sera envoyé automatiquement à la date sélectionnée
-                </p>
               </div>
             )}
           </Card>
