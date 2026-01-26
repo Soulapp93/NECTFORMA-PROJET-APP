@@ -157,26 +157,29 @@ serve(async (req) => {
 
       if (!establishmentId) {
         console.error("Could not resolve establishment for sender; cannot target instructors safely");
-        return new Response(
-          JSON.stringify({ error: "Impossible de résoudre l'établissement de l'expéditeur" }),
-          { status: 500, headers: jsonHeaders }
-        );
+        // Still save the message for "Envoyés" - just no recipients besides sender copy
+        console.log("No establishment resolved, message saved without additional recipients.");
+      } else {
+        // Only target users with role 'Formateur' (not Admins)
+        const { data: instructors, error: instructorsErr } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("establishment_id", establishmentId)
+          .eq("role", "Formateur");
+
+        if (instructorsErr) {
+          console.error("Select instructors error:", instructorsErr);
+          // Continue anyway - message will be saved
+        } else {
+          console.log(`Found ${(instructors || []).length} instructors to send to`);
+          addUserRecipients((instructors || []).map((i: any) => i.id as string));
+        }
       }
-
-      const { data: instructors, error: instructorsErr } = await supabaseAdmin
-        .from("users")
-        .select("id")
-        .eq("establishment_id", establishmentId)
-        .eq("role", "Formateur");
-
-      if (instructorsErr) {
-        console.error("Select instructors error:", instructorsErr);
-        return new Response(JSON.stringify({ error: instructorsErr.message }), { status: 500, headers: jsonHeaders });
-      }
-
-      addUserRecipients((instructors || []).map((i: any) => i.id as string));
     } else if (recipients.type === "formation" && recipients.ids?.length) {
-      // Expand formation -> assigned users
+      const establishmentId = await resolveSenderEstablishmentId();
+      
+      // Expand formation -> assigned students only (role = 'Étudiant')
+      // First get user_ids from user_formation_assignments
       const { data: assignments, error: assignErr } = await supabaseAdmin
         .from("user_formation_assignments")
         .select("user_id")
@@ -184,10 +187,26 @@ serve(async (req) => {
 
       if (assignErr) {
         console.error("Select formation assignments error:", assignErr);
-        return new Response(JSON.stringify({ error: assignErr.message }), { status: 500, headers: jsonHeaders });
-      }
+        // Continue anyway - message saved
+      } else if (assignments && assignments.length > 0) {
+        const assignedUserIds = assignments.map((a: any) => a.user_id as string);
+        
+        // Filter to only students (role = 'Étudiant') within the same establishment
+        const { data: students, error: studentsErr } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .in("id", assignedUserIds)
+          .eq("role", "Étudiant");
 
-      addUserRecipients((assignments || []).map((a: any) => a.user_id as string));
+        if (studentsErr) {
+          console.error("Filter students error:", studentsErr);
+        } else {
+          console.log(`Found ${(students || []).length} students in formations to send to`);
+          addUserRecipients((students || []).map((s: any) => s.id as string));
+        }
+      } else {
+        console.log("No students assigned to selected formations");
+      }
     } else if (recipients.type === "user" && recipients.ids?.length) {
       addUserRecipients(recipients.ids);
     }
