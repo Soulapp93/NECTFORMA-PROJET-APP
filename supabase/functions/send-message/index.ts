@@ -115,16 +115,16 @@ serve(async (req) => {
     });
 
     if (recipients.type === "all_instructors") {
-      recipientRows.push({ message_id: message.id, recipient_type: "all_instructors" });
+      recipientRows.push({ message_id: message.id, recipient_type: "all_instructors", is_read: false, read_at: null });
     } else if (recipients.type === "formation" && recipients.ids?.length) {
       for (const formationId of recipients.ids) {
-        recipientRows.push({ message_id: message.id, recipient_id: formationId, recipient_type: "formation" });
+        recipientRows.push({ message_id: message.id, recipient_id: formationId, recipient_type: "formation", is_read: false, read_at: null });
       }
     } else if (recipients.type === "user" && recipients.ids?.length) {
       for (const recipientId of recipients.ids) {
         // Avoid duplicate if the sender sends to themselves
         if (recipientId !== userId) {
-          recipientRows.push({ message_id: message.id, recipient_id: recipientId, recipient_type: "user" });
+          recipientRows.push({ message_id: message.id, recipient_id: recipientId, recipient_type: "user", is_read: false, read_at: null });
         }
       }
     }
