@@ -734,6 +734,7 @@ export type Database = {
           is_deleted: boolean | null
           is_draft: boolean
           scheduled_for: string | null
+          scheduled_recipients: Json | null
           sender_id: string
           subject: string
           updated_at: string
@@ -747,6 +748,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_draft?: boolean
           scheduled_for?: string | null
+          scheduled_recipients?: Json | null
           sender_id: string
           subject: string
           updated_at?: string
@@ -760,6 +762,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_draft?: boolean
           scheduled_for?: string | null
+          scheduled_recipients?: Json | null
           sender_id?: string
           subject?: string
           updated_at?: string
