@@ -22,30 +22,35 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Vérifier l'authentification
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      console.warn('[send-signature-link] Missing or invalid Authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // IMPORTANT: verify_jwt=false => on valide le JWT en code.
+    // On utilise getClaims (plus fiable ici que getUser(token)).
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await userClient.auth.getUser(token);
-    
-    if (claimsError || !claimsData.user) {
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+
+    const senderId = claimsData?.claims?.sub as string | undefined;
+    if (claimsError || !senderId) {
+      console.warn('[send-signature-link] Invalid JWT:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const senderId = claimsData.user.id;
+    console.log('[send-signature-link] Authenticated sender:', senderId);
 
     // Parser le body
     const { attendanceSheetId, studentIds }: SendSignatureLinkRequest = await req.json();
