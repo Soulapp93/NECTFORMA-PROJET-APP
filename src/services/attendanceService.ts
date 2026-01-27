@@ -526,7 +526,7 @@ export const attendanceService = {
     }
   },
 
-  // Envoyer le lien de signature aux étudiants
+  // Envoyer le lien de signature aux étudiants (app + email)
   async sendSignatureLink(attendanceSheetId: string, studentIds: string[]): Promise<void> {
     try {
       const {
@@ -545,8 +545,111 @@ export const attendanceService = {
       });
 
       if (error) throw error;
+
+      // Envoyer également les emails
+      const { emailNotificationService } = await import('./emailNotificationService');
+      
+      // Récupérer les infos de la feuille
+      const { data: sheet } = await supabase
+        .from('attendance_sheets')
+        .select('title, date, start_time, end_time')
+        .eq('id', attendanceSheetId)
+        .single();
+
+      if (sheet) {
+        for (const studentId of studentIds) {
+          const { data: student } = await supabase
+            .from('users')
+            .select('email, first_name, last_name')
+            .eq('id', studentId)
+            .single();
+
+          if (student) {
+            emailNotificationService.notifyAttendanceOpen(
+              student.email,
+              student.first_name,
+              student.last_name,
+              sheet.title,
+              sheet.date,
+              sheet.start_time,
+              sheet.end_time
+            ).catch(console.error); // Fire and forget
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending signature link:', error);
+      throw error;
+    }
+  },
+
+  // Ouvrir l'émargement et notifier les étudiants (app + email)
+  async openAttendanceForSigning(attendanceSheetId: string): Promise<void> {
+    try {
+      // Mettre à jour le statut
+      const { error: updateError } = await supabase
+        .from('attendance_sheets')
+        .update({
+          is_open_for_signing: true,
+          opened_at: new Date().toISOString(),
+          status: 'En cours'
+        })
+        .eq('id', attendanceSheetId);
+
+      if (updateError) throw updateError;
+
+      // Récupérer les infos de la feuille
+      const { data: sheet } = await supabase
+        .from('attendance_sheets')
+        .select('title, date, start_time, end_time, formation_id')
+        .eq('id', attendanceSheetId)
+        .single();
+
+      if (!sheet) return;
+
+      // Notifications in-app
+      const { notificationService } = await import('./notificationService');
+      await notificationService.notifyAttendanceOpen(
+        sheet.formation_id,
+        sheet.title,
+        attendanceSheetId,
+        sheet.date,
+        sheet.start_time,
+        sheet.end_time
+      );
+
+      // Notifications email
+      const { emailNotificationService } = await import('./emailNotificationService');
+      
+      const { data: userAssignments } = await supabase
+        .from('user_formation_assignments')
+        .select('user_id')
+        .eq('formation_id', sheet.formation_id);
+
+      if (userAssignments) {
+        for (const ua of userAssignments) {
+          const { data: student } = await supabase
+            .from('users')
+            .select('email, first_name, last_name, role')
+            .eq('id', ua.user_id)
+            .eq('role', 'Étudiant')
+            .maybeSingle();
+
+          if (student) {
+            emailNotificationService.notifyAttendanceOpen(
+              student.email,
+              student.first_name,
+              student.last_name,
+              sheet.title,
+              sheet.date,
+              sheet.start_time,
+              sheet.end_time
+            ).catch(console.error); // Fire and forget
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error opening attendance for signing:', error);
       throw error;
     }
   },

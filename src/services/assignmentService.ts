@@ -252,19 +252,21 @@ export const assignmentService = {
     await this.notifyCorrectionsPublished(assignmentId);
   },
 
-  // Notifier la publication d'un devoir
+  // Notifier la publication d'un devoir (app + email)
   async notifyAssignmentPublication(assignment: Assignment) {
     try {
       const { notificationService } = await import('./notificationService');
+      const { emailNotificationService } = await import('./emailNotificationService');
       
-      // Récupérer la formation via le module
+      // Récupérer la formation et le module via le module
       const { data: module } = await supabase
         .from('formation_modules')
-        .select('formation_id')
+        .select('formation_id, title')
         .eq('id', assignment.module_id)
         .single();
 
       if (module?.formation_id) {
+        // Notification in-app
         await notificationService.notifyFormationUsers(
           module.formation_id,
           'Nouveau devoir publié',
@@ -276,16 +278,45 @@ export const assignmentService = {
             due_date: assignment.due_date
           }
         );
+
+        // Récupérer les étudiants de la formation pour les emails
+        const { data: userAssignments } = await supabase
+          .from('user_formation_assignments')
+          .select('user_id')
+          .eq('formation_id', module.formation_id);
+
+        if (userAssignments) {
+          for (const ua of userAssignments) {
+            const { data: student } = await supabase
+              .from('users')
+              .select('email, first_name, last_name, role')
+              .eq('id', ua.user_id)
+              .eq('role', 'Étudiant')
+              .maybeSingle();
+
+            if (student) {
+              emailNotificationService.notifyAssignmentCreated(
+                student.email,
+                student.first_name,
+                student.last_name,
+                assignment.title,
+                module.title,
+                assignment.due_date || undefined
+              ).catch(console.error); // Fire and forget
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error sending assignment publication notifications:', error);
     }
   },
 
-  // Notifier la publication des corrections
+  // Notifier la publication des corrections (app + email)
   async notifyCorrectionsPublished(assignmentId: string) {
     try {
       const { notificationService } = await import('./notificationService');
+      const { emailNotificationService } = await import('./emailNotificationService');
       
       // Récupérer l'assignment
       const { data: assignment } = await (supabase
@@ -296,15 +327,24 @@ export const assignmentService = {
 
       if (!assignment) return;
 
-      // Récupérer les soumissions
+      // Récupérer les soumissions avec corrections
       const { data: submissions } = await supabase
         .from('assignment_submissions')
-        .select('student_id')
+        .select('id, student_id')
         .eq('assignment_id', assignmentId);
 
       if (submissions) {
+        // Récupérer les corrections pour avoir les notes
+        const { data: corrections } = await supabase
+          .from('assignment_corrections')
+          .select('submission_id, grade')
+          .in('submission_id', submissions.map(s => s.id));
+
+        const correctionMap = new Map(corrections?.map(c => [c.submission_id, c.grade]) || []);
+
         // Notifier chaque étudiant qui a rendu le devoir
         for (const submission of submissions) {
+          // Notification in-app
           await notificationService.notifyUser(
             submission.student_id,
             'Correction publiée',
@@ -315,6 +355,25 @@ export const assignmentService = {
               module_id: (assignment as Assignment).module_id
             }
           );
+
+          // Notification email
+          const { data: student } = await supabase
+            .from('users')
+            .select('email, first_name, last_name')
+            .eq('id', submission.student_id)
+            .single();
+
+          if (student) {
+            const grade = correctionMap.get(submission.student_id);
+            emailNotificationService.notifyCorrectionPublished(
+              student.email,
+              student.first_name,
+              student.last_name,
+              (assignment as Assignment).title,
+              grade !== undefined && grade !== null ? grade : undefined,
+              (assignment as Assignment).max_points || 20
+            ).catch(console.error); // Fire and forget
+          }
         }
       }
     } catch (error) {
