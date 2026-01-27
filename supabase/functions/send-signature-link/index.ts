@@ -31,25 +31,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // IMPORTANT: verify_jwt=false => on valide le JWT en code.
-    // On utilise getClaims (plus fiable ici que getUser(token)).
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
+    // Valider le token JWT en utilisant getUser avec le service_role client
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
 
-    const senderId = claimsData?.claims?.sub as string | undefined;
-    if (claimsError || !senderId) {
-      console.warn('[send-signature-link] Invalid JWT:', claimsError);
+    if (userError || !userData.user) {
+      console.warn('[send-signature-link] Invalid JWT:', userError?.message);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const senderId = userData.user.id;
     console.log('[send-signature-link] Authenticated sender:', senderId);
 
     // Parser le body
