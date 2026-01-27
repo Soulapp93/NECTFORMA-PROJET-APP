@@ -61,12 +61,23 @@ const SignaturePublique = () => {
 
       setCurrentUser(userData);
 
-      // 3. Valider le token
+      // 3. Valider le token - avec logs pour debug
+      console.log('[SignaturePublique] Validating token:', token);
       const validationData = await attendanceService.validateSignatureToken(token!);
+      console.log('[SignaturePublique] Validation result:', validationData);
       
-      if (!validationData || !validationData.is_valid) {
+      if (!validationData) {
+        console.log('[SignaturePublique] No validation data returned');
         setTokenValid(false);
-        setTokenError(validationData?.error_message || 'Token invalide');
+        setTokenError('Token invalide ou non trouvé');
+        setLoading(false);
+        return;
+      }
+      
+      if (!validationData.is_valid) {
+        console.log('[SignaturePublique] Token invalid:', validationData.error_message);
+        setTokenValid(false);
+        setTokenError(validationData.error_message || 'Token invalide');
         setLoading(false);
         return;
       }

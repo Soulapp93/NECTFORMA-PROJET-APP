@@ -114,6 +114,19 @@ const AppContent = () => {
     );
   }
 
+  // Page de signature publique (gère sa propre authentification)
+  const isSignaturePage = location.pathname.startsWith('/emargement/signer/');
+  if (isSignaturePage) {
+    return (
+      <div className="min-h-screen w-full">
+        <Routes>
+          <Route path="/emargement/signer/:token" element={<SignaturePublique />} />
+        </Routes>
+        <Toaster />
+      </div>
+    );
+  }
+
   // Pages publiques (sans authentification)
   const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite'];
   const isPublicPage = publicPages.includes(location.pathname);
@@ -163,7 +176,7 @@ const AppContent = () => {
           
           <main className="flex-1 overflow-auto bg-gray-50">
             <Routes>
-              <Route path="/emargement/signer/:token" element={<SignaturePublique />} />
+              {/* Route de signature déplacée dans le bloc public */}
               <Route path="/dashboard" element={<ProtectedRoute><AdminRoute><Dashboard /></AdminRoute></ProtectedRoute>} />
               <Route path="/administration" element={<ProtectedRoute><AdminRoute><Administration /></AdminRoute></ProtectedRoute>} />
               <Route path="/formations" element={<ProtectedRoute><Formations /></ProtectedRoute>} />
