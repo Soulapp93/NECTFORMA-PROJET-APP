@@ -57,37 +57,21 @@ const FormationParticipantsModal: React.FC<FormationParticipantsModalProps> = ({
       setLoading(true);
       setError(null);
 
-      // Récupérer les utilisateurs assignés à la formation
-      const { data, error } = await supabase
-        .from('user_formation_assignments')
-        .select(`
-          id,
-          user:users(
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            profile_photo_url,
-            role
-          )
-        `)
-        .eq('formation_id', formationId);
+      // IMPORTANT: En tant que Formateur, la RLS empêche de lire les inscriptions des autres utilisateurs.
+      // On passe donc par une fonction backend sécurisée qui renvoie uniquement les étudiants.
+      const { data, error } = await supabase.rpc('get_formation_students', {
+        formation_id_param: formationId,
+      });
 
       if (error) throw error;
 
-      // Filtrer côté client pour ne garder que les étudiants
-      const studentsOnly = (data || []).filter(
-        (item: any) => item.user && item.user.role === 'Étudiant'
-      );
-
-      const formattedParticipants = studentsOnly.map((item: any) => ({
-        id: item.user.id,
-        first_name: item.user.first_name,
-        last_name: item.user.last_name,
-        email: item.user.email,
-        phone: item.user.phone,
-        profile_photo_url: getResolvedPhotoUrl(item.user.profile_photo_url)
+      const formattedParticipants = (data || []).map((u: any) => ({
+        id: u.user_id,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        email: u.email,
+        phone: u.phone,
+        profile_photo_url: getResolvedPhotoUrl(u.profile_photo_url),
       }));
 
       setParticipants(formattedParticipants);

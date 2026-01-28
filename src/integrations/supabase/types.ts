@@ -1567,6 +1567,17 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: string
       }
+      get_formation_students: {
+        Args: { formation_id_param: string }
+        Returns: {
+          email: string
+          first_name: string
+          last_name: string
+          phone: string
+          profile_photo_url: string
+          user_id: string
+        }[]
+      }
       get_my_context: { Args: never; Returns: Json }
       get_my_profile: { Args: never; Returns: Json }
       get_tutor_apprentice_formations: {
