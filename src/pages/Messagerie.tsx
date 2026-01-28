@@ -720,7 +720,18 @@ const Messagerie = () => {
                                 {message.subject}
                               </h3>
                               <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                {message.content}
+                                {(() => {
+                                  const content = message.content ?? '';
+                                  // Strip HTML tags for preview (for system messages with HTML content)
+                                  const looksLikeHtml = /<\s*\/?\s*[a-z][\s\S]*>/i.test(content);
+                                  if (looksLikeHtml) {
+                                    // Create a temporary element to extract text content
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = content;
+                                    return tempDiv.textContent || tempDiv.innerText || '';
+                                  }
+                                  return content;
+                                })()}
                               </p>
                               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
