@@ -35,6 +35,7 @@ export interface CreateTokenOptions {
 export async function createDailyRoom(options: CreateRoomOptions): Promise<{ room: DailyRoom; url: string }> {
   const { data, error } = await supabase.functions.invoke('daily-room', {
     body: {
+      action: 'create-room',
       ...options,
     },
   });
@@ -58,8 +59,11 @@ export async function createDailyRoom(options: CreateRoomOptions): Promise<{ roo
  * Create a meeting token for a participant
  */
 export async function createDailyToken(options: CreateTokenOptions): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('daily-room/create-token', {
-    body: options,
+  const { data, error } = await supabase.functions.invoke('daily-room', {
+    body: {
+      action: 'create-token',
+      ...options,
+    },
   });
 
   if (error) {
@@ -78,8 +82,8 @@ export async function createDailyToken(options: CreateTokenOptions): Promise<str
  * Delete a Daily.co room
  */
 export async function deleteDailyRoom(roomName: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('daily-room/delete-room', {
-    body: { roomName },
+  const { data, error } = await supabase.functions.invoke('daily-room', {
+    body: { action: 'delete-room', roomName },
   });
 
   if (error) {
@@ -95,8 +99,8 @@ export async function getDailyRoomInfo(roomName: string): Promise<{
   room: DailyRoom;
   participantCount: number;
 }> {
-  const { data, error } = await supabase.functions.invoke('daily-room/room-info', {
-    body: { roomName },
+  const { data, error } = await supabase.functions.invoke('daily-room', {
+    body: { action: 'room-info', roomName },
   });
 
   if (error) {

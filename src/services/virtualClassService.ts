@@ -289,6 +289,19 @@ export const virtualClassService = {
   },
 
   async joinClass(classId: string, userId: string): Promise<VirtualClassParticipant> {
+    // Check if user is already a participant
+    const { data: existing } = await db
+      .from('virtual_class_participants')
+      .select('*')
+      .eq('virtual_class_id', classId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existing) {
+      // User is already registered, return existing participant
+      return existing as VirtualClassParticipant;
+    }
+
     const { data, error } = await db
       .from('virtual_class_participants')
       .insert({

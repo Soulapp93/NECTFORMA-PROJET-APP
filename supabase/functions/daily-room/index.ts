@@ -34,13 +34,11 @@ serve(async (req) => {
       throw new Error('DAILY_API_KEY not configured');
     }
 
-    const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
-
     if (req.method === 'POST') {
       const body = await req.json();
+      const action = body.action || 'create-room';
 
-      if (action === 'create-room' || url.pathname.endsWith('/daily-room')) {
+      if (action === 'create-room') {
         // Create or get a Daily.co room
         const { 
           roomName, 
