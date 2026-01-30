@@ -17,7 +17,6 @@ import {
   UsersRound,
   ShieldCheck,
   Settings,
-  Video
 } from 'lucide-react';
 import {
   Sidebar as SidebarWrapper,
@@ -116,7 +115,6 @@ const Sidebar = () => {
     { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Administration', href: '/administration', icon: ShieldCheck, subItems: administrationSubItems },
     { name: 'Formation', href: '/formations', icon: GraduationCap },
-    { name: 'E-learning', href: '/e-learning', icon: Video },
     { name: 'Emploi du temps', href: '/emploi-temps', icon: CalendarClock },
     { name: 'Messagerie', href: '/messagerie', icon: Mail },
     { name: 'Groupes', href: '/groupes', icon: UsersRound },
@@ -129,7 +127,6 @@ const Sidebar = () => {
     { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Administration', href: '/administration', icon: ShieldCheck, subItems: administrationSubItems },
     { name: 'Formation', href: '/formations', icon: GraduationCap },
-    { name: 'E-learning', href: '/e-learning', icon: Video },
     { name: 'Emploi du temps', href: '/emploi-temps', icon: CalendarClock },
     { name: 'Messagerie', href: '/messagerie', icon: Mail },
     { name: 'Groupes', href: '/groupes', icon: UsersRound },
@@ -147,7 +144,7 @@ const Sidebar = () => {
   // Navigation pour les formateurs et étudiants (avec profil)
   const limitedNavigation: NavigationItem[] = [
     { name: 'Formation', href: '/formations', icon: GraduationCap },
-    { name: 'E-learning', href: '/e-learning', icon: Video },
+    
     { name: 'Suivi Émargement', href: '/suivi-emargement', icon: ClipboardCheck },
     { name: 'Emploi du temps', href: '/emploi-temps', icon: CalendarClock },
     { name: 'Messagerie', href: '/messagerie', icon: Mail },
