@@ -12,9 +12,6 @@ verify_jwt = false
 [functions.create-establishment]
 verify_jwt = false
 
-[functions.daily-room]
-verify_jwt = false
-
 [functions.generate-attendance-sheets]
 verify_jwt = false
 
@@ -46,9 +43,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.setup-demo-accounts]
-verify_jwt = false
-
-[functions.update-class-status]
 verify_jwt = false
 
 [functions.validate-activation-token]
