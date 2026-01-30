@@ -221,7 +221,6 @@ serve(async (req) => {
         establishment_id,
         status: "En attente",
         is_activated: false,
-        invitation_sent_at: new Date().toISOString(),
       });
 
     if (insertError) {
