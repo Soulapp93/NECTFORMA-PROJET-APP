@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
+
+// Version for deployment verification
+const VERSION = "v2.1.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,90 +42,114 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
     
     const { token, password }: ActivateAccountRequest = await req.json();
 
     if (!token || !password) {
       return new Response(
-        JSON.stringify({ error: "Token et mot de passe requis" }),
+        JSON.stringify({ error: "Token et mot de passe requis", _version: VERSION }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Processing account activation for token:", token.substring(0, 8) + "...");
+    console.log(`[${VERSION}] Processing account activation for token:`, token.substring(0, 8) + "...");
 
     // Validate password strength
     if (password.length < 8) {
       return new Response(
-        JSON.stringify({ error: "Le mot de passe doit contenir au moins 8 caractères" }),
+        JSON.stringify({ error: "Le mot de passe doit contenir au moins 8 caractères", _version: VERSION }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Find and validate activation token
+    const nowIso = new Date().toISOString();
+
+    // Step 1: Get the token data (WITHOUT join - no foreign key relationship)
     const { data: tokenData, error: tokenError } = await supabase
       .from('user_activation_tokens')
-      .select('*, users!inner(id, email, first_name, last_name, role, establishment_id)')
+      .select('user_id, token, expires_at, used_at')
       .eq('token', token)
       .is('used_at', null)
-      .gt('expires_at', new Date().toISOString())
+      .gt('expires_at', nowIso)
       .single();
 
     if (tokenError || !tokenData) {
-      console.error("Token validation error:", tokenError);
+      console.error(`[${VERSION}] ❌ Token validation error:`, tokenError);
       return new Response(
-        JSON.stringify({ error: "Token d'activation invalide ou expiré" }),
+        JSON.stringify({ error: "Token d'activation invalide ou expiré", _version: VERSION }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const user = tokenData.users;
-    const userId = tokenData.user_id as string;
+    console.log(`[${VERSION}] ✅ Token valid, fetching user:`, tokenData.user_id);
 
-    console.log("Activating account for user:", user.email, "userId:", userId);
+    // Step 2: Get the user data separately
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, role, establishment_id')
+      .eq('id', tokenData.user_id)
+      .single();
+
+    if (userError || !userData) {
+      console.error(`[${VERSION}] ❌ User not found:`, userError);
+      return new Response(
+        JSON.stringify({ error: "Utilisateur introuvable", _version: VERSION }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = userData.id;
+    console.log(`[${VERSION}] ✅ Activating account for user:`, userData.email);
 
     // Find Auth user reliably (pagination safe)
-    const existingAuthUserId = await findAuthUserIdByEmail(supabase, user.email);
+    const existingAuthUserId = await findAuthUserIdByEmail(supabase, userData.email);
     let authUserId: string | null = existingAuthUserId;
 
     if (authUserId) {
+      console.log(`[${VERSION}] 🔄 Updating existing auth user:`, authUserId);
       const { error: updateError } = await supabase.auth.admin.updateUserById(authUserId, {
         password,
         email_confirm: true,
         user_metadata: {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          establishment_id: user.establishment_id,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          role: userData.role,
+          establishment_id: userData.establishment_id,
         },
       });
 
       if (updateError) {
-        console.error("Error updating auth user:", updateError);
+        console.error(`[${VERSION}] ❌ Error updating auth user:`, updateError);
         return new Response(
-          JSON.stringify({ error: "Erreur lors de la mise à jour du compte" }),
+          JSON.stringify({ error: "Erreur lors de la mise à jour du compte", _version: VERSION }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     } else {
       // Fallback: if Auth user doesn't exist, create it
+      console.log(`[${VERSION}] ➕ Creating new auth user for:`, userData.email);
       const { data: createdAuth, error: createError } = await supabase.auth.admin.createUser({
-        email: user.email,
+        email: userData.email,
         password,
         email_confirm: true,
         user_metadata: {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          establishment_id: user.establishment_id,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          role: userData.role,
+          establishment_id: userData.establishment_id,
         },
       });
 
       if (createError || !createdAuth?.user?.id) {
-        console.error("Error creating auth user:", createError);
+        console.error(`[${VERSION}] ❌ Error creating auth user:`, createError);
         return new Response(
-          JSON.stringify({ error: "Erreur lors de la création du compte: " + (createError?.message || "inconnue") }),
+          JSON.stringify({ error: "Erreur lors de la création du compte: " + (createError?.message || "inconnue"), _version: VERSION }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
@@ -132,12 +159,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!authUserId) {
       return new Response(
-        JSON.stringify({ error: "Erreur lors de la création/mise à jour du compte utilisateur" }),
+        JSON.stringify({ error: "Erreur lors de la création/mise à jour du compte utilisateur", _version: VERSION }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Update public profile row (do NOT attempt to change the primary key id)
+    // Update public profile row
     const { error: updateUserError } = await supabase
       .from("users")
       .update({
@@ -147,9 +174,9 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", userId);
 
     if (updateUserError) {
-      console.error("Error updating public.users activation flags:", updateUserError);
+      console.error(`[${VERSION}] ❌ Error updating public.users activation flags:`, updateUserError);
       return new Response(
-        JSON.stringify({ error: "Erreur lors de la mise à jour du profil utilisateur" }),
+        JSON.stringify({ error: "Erreur lors de la mise à jour du profil utilisateur", _version: VERSION }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -160,22 +187,23 @@ const handler = async (req: Request): Promise<Response> => {
       .update({ used_at: new Date().toISOString() })
       .eq('token', token);
 
-    console.log("Account activated successfully for user:", authUserId);
+    console.log(`[${VERSION}] ✅ Account activated successfully for user:`, authUserId);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         user_id: authUserId,
-        email: user.email,
-        message: "Compte activé avec succès" 
+        email: userData.email,
+        message: "Compte activé avec succès",
+        _version: VERSION
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
   } catch (error: any) {
-    console.error("Error in activate-user-account function:", error);
+    console.error(`[${VERSION}] ❌ Critical error:`, error);
     return new Response(
-      JSON.stringify({ error: error.message || "Erreur interne du serveur" }),
+      JSON.stringify({ error: error.message || "Erreur interne du serveur", _version: VERSION }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
