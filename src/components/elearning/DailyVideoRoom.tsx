@@ -73,11 +73,23 @@ const DailyVideoRoom: React.FC<DailyVideoRoomProps> = ({
   const cleanupCallFrame = useCallback(async () => {
     const frame = callRef.current;
     if (!frame) return;
-    try {
-      await frame.leave();
-    } catch {
-      // ignore
-    }
+
+    // IMPORTANT:
+    // When join is stuck (network blocks Daily/WebRTC), `leave()` can hang indefinitely.
+    // If we await it, the UI can remain stuck on the loading overlay.
+    const leaveWithTimeout = async () => {
+      try {
+        await Promise.race([
+          frame.leave(),
+          new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch {
+        // ignore
+      }
+    };
+
+    await leaveWithTimeout();
+
     try {
       frame.destroy();
     } catch {
@@ -237,10 +249,11 @@ const DailyVideoRoom: React.FC<DailyVideoRoomProps> = ({
 
     } catch (err) {
       console.error('Error initializing call:', err);
-      // Ensure we don't leave a half-initialized callFrame around
-      await cleanupCallFrame();
+      // Always unlock UI first; cleanup can be slow or hang on some networks.
       setError(err instanceof Error ? err.message : 'Erreur de connexion');
       setIsLoading(false);
+      // Ensure we don't leave a half-initialized callFrame around
+      void cleanupCallFrame();
       hasInitialized.current = false; // Allow retry
     }
   }, [virtualClassId, userId, userName, isInstructor, chatEnabled, screenShareEnabled, recordingEnabled, updateParticipantCount, cleanupCallFrame]);
