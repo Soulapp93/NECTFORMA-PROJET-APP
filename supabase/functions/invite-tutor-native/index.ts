@@ -311,7 +311,6 @@ serve(async (req) => {
         last_name,
         phone: phone || null,
         company_name,
-        company_address: company_address || null,
         position: position || null,
         establishment_id,
         is_activated: false,
