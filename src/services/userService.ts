@@ -185,9 +185,14 @@ export const userService = {
           formation_id: formationId,
         }));
 
-        await supabase
+        const { error: upsertError } = await supabase
           .from('user_formation_assignments')
           .upsert(assignments, { onConflict: 'user_id,formation_id', ignoreDuplicates: true } as any);
+
+        if (upsertError) {
+          console.error('Erreur lors de l\'assignation des formations (utilisateur existant):', upsertError);
+          throw upsertError;
+        }
       }
 
       // Resend invitation if not activated
@@ -446,17 +451,15 @@ export const userService = {
     const establishmentId = await getCurrentUserEstablishmentId();
     const emails = usersData.map((u) => u.email.trim().toLowerCase());
 
-    const { data: existingUsers } = await supabase
+    const { data: existingUsers, error: existingUsersError } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, is_activated')
       .in('email', emails);
 
-    const existingEmailSet = new Set((existingUsers || []).map((u) => u.email));
-    const usersToCreate = usersData.filter((u) => !existingEmailSet.has(u.email.trim().toLowerCase()));
+    if (existingUsersError) throw existingUsersError;
 
-    if (usersToCreate.length === 0) {
-      throw new Error("Aucun utilisateur importé : tous les emails existent déjà.");
-    }
+    const existingByEmail = new Map<string, { id: string; is_activated: boolean | null }>();
+    (existingUsers || []).forEach((u) => existingByEmail.set(u.email.toLowerCase(), { id: u.id, is_activated: u.is_activated }));
 
     // Charger toutes les formations de l'établissement pour la résolution des noms
     const { data: allFormations } = await supabase
@@ -469,10 +472,10 @@ export const userService = {
       formationMap.set(f.title.toLowerCase().trim(), f.id);
     });
 
-    const createdUsers: User[] = [];
+    const results: User[] = [];
 
-    // Create users one by one using native invitation
-    for (const userData of usersToCreate) {
+    // Créer les nouveaux utilisateurs + (important) assigner formations aux utilisateurs déjà existants
+    for (const userData of usersData) {
       try {
         // Résoudre les noms de formations en IDs
         const formationNames = userData._formationNames || [];
@@ -498,21 +501,53 @@ export const userService = {
           }
         }
 
-        // Supprimer le champ interne avant création
+        const normalizedEmail = userData.email.trim().toLowerCase();
+        const existing = existingByEmail.get(normalizedEmail);
+
+        // Cas 1: utilisateur déjà existant -> on ASSIGNE les formations (upsert), sans recréer le compte
+        if (existing) {
+          if (formationIds.length > 0) {
+            const assignments = formationIds.map((formationId) => ({
+              user_id: existing.id,
+              formation_id: formationId,
+            }));
+
+            const { error: upsertError } = await supabase
+              .from('user_formation_assignments')
+              .upsert(assignments, { onConflict: 'user_id,formation_id', ignoreDuplicates: true } as any);
+
+            if (upsertError) throw upsertError;
+          }
+
+          // Optionnel: si le compte n'est pas activé, on peut renvoyer l'invitation
+          if (!existing.is_activated) {
+            await supabase.functions.invoke('resend-invitation-native', {
+              headers: {
+                Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              },
+              body: { email: normalizedEmail },
+            });
+          }
+
+          const refreshed = await this.getUserById(existing.id);
+          results.push(refreshed);
+          continue;
+        }
+
+        // Cas 2: nouvel utilisateur -> création + assignation formations
         const { _formationNames, ...cleanUserData } = userData;
-        
-        const user = await this.createUser(cleanUserData, formationIds);
-        createdUsers.push(user);
+        const created = await this.createUser(cleanUserData, formationIds);
+        results.push(created);
       } catch (error) {
         console.error(`Erreur création utilisateur ${userData.email}:`, error);
       }
     }
 
-    if (createdUsers.length === 0) {
-      throw new Error("Aucun utilisateur n'a pu être créé.");
+    if (results.length === 0) {
+      throw new Error("Aucun utilisateur n'a pu être créé ou mis à jour.");
     }
 
-    return createdUsers;
+    return results;
   },
 
   // Resend activation email using native Supabase invitation
