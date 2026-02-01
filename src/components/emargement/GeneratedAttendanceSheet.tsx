@@ -529,53 +529,71 @@ const GeneratedAttendanceSheet: React.FC<GeneratedAttendanceSheetProps> = ({
 
         {/* Signatures des responsables */}
         <div className="p-6 border-t">
-          <div className={`grid gap-8 ${(attendanceSheet.session_type === 'autonomie' || (attendanceSheet as any).instructor_absent) ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'}`}>
-            {/* Zone Signature Formateur - Masquée pour les sessions en autonomie ou formateur absent */}
-            {attendanceSheet.session_type !== 'autonomie' && !(attendanceSheet as any).instructor_absent && (
+          <div className={`grid gap-8 ${attendanceSheet.session_type === 'autonomie' ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'}`}>
+            {/* Zone Signature Formateur - Masquée uniquement pour les sessions en autonomie */}
+            {attendanceSheet.session_type !== 'autonomie' && (
               <div>
                 <h4 className="font-semibold mb-3">Signature du Formateur</h4>
-                {(() => {
-                  const instructorSignature = (attendanceSheet as any).signatures?.find(
-                    (sig: any) => sig.user_type === 'instructor'
-                  );
-
-                  const canInstructorSign = !instructorSignature;
-
-                  return (
-                    <>
-                      <div
-                        className={`border border-gray-300 rounded-lg h-24 bg-gray-50 flex items-center justify-center p-2 relative ${
-                          canInstructorSign
-                            ? 'cursor-pointer hover:bg-gray-100 transition-colors print:cursor-default print:hover:bg-gray-50'
-                            : ''
-                        }`}
-                        onClick={() => {
-                          if (canInstructorSign) {
-                            setShowInstructorSignModal(true);
-                          }
-                        }}
-                      >
-                        {instructorSignature?.signature_data ? (
-                          <img
-                            src={instructorSignature.signature_data}
-                            alt="Signature formateur"
-                            className="h-16 w-auto"
-                          />
-                        ) : (
-                          <div className="text-xs text-gray-500 text-center flex flex-col items-center gap-2">
-                            <PenTool className="w-5 h-5 print:hidden" />
-                            <span>Cliquez pour signer</span>
-                          </div>
-                        )}
+                {(attendanceSheet as any).instructor_absent ? (
+                  // Formateur absent - Afficher "Absent" dans la zone de signature
+                  <>
+                    <div className="border border-amber-300 rounded-lg h-24 bg-amber-50 flex items-center justify-center p-2">
+                      <div className="text-center">
+                        <UserX className="w-8 h-8 text-amber-600 mx-auto mb-1" />
+                        <span className="text-sm font-medium text-amber-700">ABSENT</span>
                       </div>
-                      <div className="mt-2 text-center text-sm text-gray-600 border-t pt-2">
-                        {attendanceSheet.instructor
-                          ? `${attendanceSheet.instructor.first_name} ${attendanceSheet.instructor.last_name}`
-                          : 'Formateur non assigné'}
-                      </div>
-                    </>
-                  );
-                })()}
+                    </div>
+                    <div className="mt-2 text-center text-sm text-gray-600 border-t pt-2">
+                      {attendanceSheet.instructor
+                        ? `${attendanceSheet.instructor.first_name} ${attendanceSheet.instructor.last_name}`
+                        : 'Formateur non assigné'}
+                    </div>
+                  </>
+                ) : (
+                  // Formateur présent - Zone de signature normale
+                  (() => {
+                    const instructorSignature = (attendanceSheet as any).signatures?.find(
+                      (sig: any) => sig.user_type === 'instructor'
+                    );
+
+                    const canInstructorSign = !instructorSignature;
+
+                    return (
+                      <>
+                        <div
+                          className={`border border-gray-300 rounded-lg h-24 bg-gray-50 flex items-center justify-center p-2 relative ${
+                            canInstructorSign
+                              ? 'cursor-pointer hover:bg-gray-100 transition-colors print:cursor-default print:hover:bg-gray-50'
+                              : ''
+                          }`}
+                          onClick={() => {
+                            if (canInstructorSign) {
+                              setShowInstructorSignModal(true);
+                            }
+                          }}
+                        >
+                          {instructorSignature?.signature_data ? (
+                            <img
+                              src={instructorSignature.signature_data}
+                              alt="Signature formateur"
+                              className="h-16 w-auto"
+                            />
+                          ) : (
+                            <div className="text-xs text-gray-500 text-center flex flex-col items-center gap-2">
+                              <PenTool className="w-5 h-5 print:hidden" />
+                              <span>Cliquez pour signer</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 text-center text-sm text-gray-600 border-t pt-2">
+                          {attendanceSheet.instructor
+                            ? `${attendanceSheet.instructor.first_name} ${attendanceSheet.instructor.last_name}`
+                            : 'Formateur non assigné'}
+                        </div>
+                      </>
+                    );
+                  })()
+                )}
               </div>
             )}
             
