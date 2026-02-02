@@ -66,41 +66,120 @@ const Documentation = () => {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    // iOS peut annuler le téléchargement si on révoque l'URL trop tôt
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   };
 
-  const exportPdfWithJsPdfHtml = async (orientation: 'portrait' | 'landscape') => {
-    const { default: jsPDF } = await import('jspdf');
+  const exportPdfBySections = async (orientation: 'portrait' | 'landscape') => {
+    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas'),
+    ]);
 
     const content = contentRef.current;
     if (!content) throw new Error('Contenu non trouvé');
 
-    // Format A4 + orientation
-    const doc = new jsPDF({
-      orientation: orientation === 'portrait' ? 'p' : 'l',
+    const isLandscape = orientation === 'landscape';
+    const A4_WIDTH_MM = isLandscape ? 297 : 210;
+    const A4_HEIGHT_MM = isLandscape ? 210 : 297;
+    const MARGIN_MM = 12;
+    const CONTENT_WIDTH_MM = A4_WIDTH_MM - MARGIN_MM * 2;
+    const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - MARGIN_MM * 2;
+    const SECTION_GAP_MM = 4;
+
+    const sections = Array.from(
+      content.querySelectorAll<HTMLElement>('.pdf-section')
+    ).filter((el) => !!el);
+
+    if (sections.length === 0) {
+      throw new Error('Aucune section PDF trouvée');
+    }
+
+    const pdf = new jsPDF({
+      orientation: isLandscape ? 'l' : 'p',
       unit: 'mm',
       format: 'a4',
     });
 
-    const margin = 10;
+    let currentY = MARGIN_MM;
 
-    // jsPDF.html gère la pagination en interne (plus fiable sur mobile que la capture géante html2canvas)
-    await doc.html(content, {
-      x: margin,
-      y: margin,
-      margin,
-      autoPaging: 'text',
-      html2canvas: {
-        scale: 0.8,
+    for (const section of sections) {
+      // Sur iOS, réduire la charge mémoire est clé : scale modéré + fond blanc
+      const canvas = await html2canvas(section, {
+        scale: 1,
         useCORS: true,
-        logging: false,
+        allowTaint: true,
         backgroundColor: '#ffffff',
-      },
-      windowWidth: content.scrollWidth,
-    });
+        logging: false,
+        // évite parfois des captures vides sur iOS avec certains styles
+        foreignObjectRendering: false,
+      });
 
-    // Télécharger via Blob (plus compatible iOS qu'un dataURL massif)
-    const blob = doc.output('blob');
+      const widthPx = canvas.width;
+      const heightPx = canvas.height;
+      const scaleFactor = CONTENT_WIDTH_MM / widthPx;
+      const heightMM = heightPx * scaleFactor;
+
+      // Si la section ne tient pas sur la page courante, on passe à la suivante
+      const remainingSpace = A4_HEIGHT_MM - MARGIN_MM - currentY;
+      if (heightMM > remainingSpace && currentY > MARGIN_MM) {
+        pdf.addPage();
+        currentY = MARGIN_MM;
+      }
+
+      // Si une section est plus grande qu'une page, on la découpe en tranches
+      if (heightMM > CONTENT_HEIGHT_MM) {
+        const sliceHeightPx = Math.floor(CONTENT_HEIGHT_MM / scaleFactor);
+        let sliceY = 0;
+
+        while (sliceY < heightPx) {
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = widthPx;
+          sliceCanvas.height = Math.min(sliceHeightPx, heightPx - sliceY);
+          const ctx = sliceCanvas.getContext('2d');
+          if (!ctx) break;
+
+          ctx.drawImage(
+            canvas,
+            0,
+            sliceY,
+            widthPx,
+            sliceCanvas.height,
+            0,
+            0,
+            widthPx,
+            sliceCanvas.height
+          );
+
+          const sliceHeightMM = sliceCanvas.height * scaleFactor;
+          const imgData = sliceCanvas.toDataURL('image/jpeg', 0.85);
+
+          pdf.addImage(imgData, 'JPEG', MARGIN_MM, currentY, CONTENT_WIDTH_MM, sliceHeightMM);
+          sliceY += sliceCanvas.height;
+
+          if (sliceY < heightPx) {
+            pdf.addPage();
+            currentY = MARGIN_MM;
+          } else {
+            currentY += sliceHeightMM + SECTION_GAP_MM;
+          }
+        }
+
+        continue;
+      }
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+      pdf.addImage(imgData, 'JPEG', MARGIN_MM, currentY, CONTENT_WIDTH_MM, heightMM);
+      currentY += heightMM + SECTION_GAP_MM;
+
+      // Si on dépasse la page après ajout, on prépare une nouvelle page
+      if (currentY > A4_HEIGHT_MM - MARGIN_MM) {
+        pdf.addPage();
+        currentY = MARGIN_MM;
+      }
+    }
+
+    const blob = pdf.output('blob');
     triggerBrowserDownload(blob, exportFileName);
   };
 
@@ -110,7 +189,7 @@ const Documentation = () => {
     toast.info('Génération du PDF en cours...');
 
     try {
-      await exportPdfWithJsPdfHtml(exportOrientation);
+      await exportPdfBySections(exportOrientation);
       toast.success('PDF téléchargé !');
     } catch (error) {
       console.error('Erreur export PDF:', error);
@@ -210,7 +289,7 @@ const Documentation = () => {
       {/* Main content */}
       <div className="container mx-auto px-4 py-8" ref={contentRef}>
         {/* Introduction */}
-        <section className="mb-12">
+        <section className="mb-12 pdf-section">
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-2xl">
@@ -234,7 +313,7 @@ const Documentation = () => {
         </section>
 
         {/* Table des matières */}
-        <section className="mb-12">
+        <section className="mb-12 pdf-section">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Table des matières
@@ -976,7 +1055,7 @@ const DocSectionWrapper = ({ id, number, title, description, roles, activeRole, 
   if (!isVisible) return null;
 
   return (
-    <section id={id} className="scroll-mt-32">
+    <section id={id} className="scroll-mt-32 pdf-section">
       <div className="flex items-start gap-4 mb-6">
         <Badge variant="outline" className="text-lg px-3 py-1 flex-shrink-0">{number}</Badge>
         <div>
