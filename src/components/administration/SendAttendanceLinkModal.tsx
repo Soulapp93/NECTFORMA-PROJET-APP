@@ -197,12 +197,11 @@ const SendAttendanceLinkModal: React.FC<SendAttendanceLinkModalProps> = ({
           sheetId = existingSheet.id;
           instructorId = existingSheet.instructor_id;
           
-          // Mettre à jour le statut d'absence du formateur
+          // Mettre à jour le statut d'absence du formateur (sans changer le type de session)
           await supabase
             .from('attendance_sheets')
             .update({ 
-              instructor_absent: instructorAbsent,
-              session_type: 'autonomie' // Session autonomie quand envoi de lien
+              instructor_absent: instructorAbsent
             } as any)
             .eq('id', sheetId);
           
@@ -219,7 +218,7 @@ const SendAttendanceLinkModal: React.FC<SendAttendanceLinkModalProps> = ({
             expiresAt = result.expiresAt;
           }
         } else {
-          // Créer une nouvelle feuille d'émargement
+          // Créer une nouvelle feuille d'émargement (garder session_type par défaut, pas autonomie)
           const { data: newSheet, error: createError } = await supabase
             .from('attendance_sheets')
             .insert({
@@ -230,7 +229,6 @@ const SendAttendanceLinkModal: React.FC<SendAttendanceLinkModalProps> = ({
               end_time: slot.end_time,
               room: slot.room,
               title: slot.formation_modules?.title || 'Cours',
-              session_type: 'autonomie',
               status: 'En attente',
               instructor_id: slot.instructor_id,
               instructor_absent: instructorAbsent
