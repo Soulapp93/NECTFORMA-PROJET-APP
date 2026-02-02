@@ -358,10 +358,9 @@ const Index = () => {
           </AnimatedSection>
           
           <AnimatedSection animation="fade-up" delay={100}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 md:mb-8 leading-tight">
-              <TextReveal delay={200}>Gérez vos formations</TextReveal>
-              <br />
-              <span className="gradient-text-animated">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 md:mb-8 leading-tight text-center">
+              <span className="block">Gérez vos formations</span>
+              <span className="gradient-text-animated block">
                 comme jamais
               </span>
             </h1>
