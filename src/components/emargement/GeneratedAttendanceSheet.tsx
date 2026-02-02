@@ -535,13 +535,15 @@ const GeneratedAttendanceSheet: React.FC<GeneratedAttendanceSheetProps> = ({
               <div>
                 <h4 className="font-semibold mb-3">Signature du Formateur</h4>
                 {(attendanceSheet as any).instructor_absent ? (
-                  // Formateur absent - Afficher "Absent" dans la zone de signature
+                  // Formateur absent - Zone identique mais avec "ABSENT" en style signature
                   <>
-                    <div className="border border-amber-300 rounded-lg h-24 bg-amber-50 flex items-center justify-center p-2">
-                      <div className="text-center">
-                        <UserX className="w-8 h-8 text-amber-600 mx-auto mb-1" />
-                        <span className="text-sm font-medium text-amber-700">ABSENT</span>
-                      </div>
+                    <div className="border border-gray-300 rounded-lg h-24 bg-gray-50 flex items-center justify-center p-2">
+                      <span 
+                        className="text-2xl font-bold text-gray-600 italic"
+                        style={{ fontFamily: 'cursive, "Brush Script MT", Georgia, serif' }}
+                      >
+                        ABSENT
+                      </span>
                     </div>
                     <div className="mt-2 text-center text-sm text-gray-600 border-t pt-2">
                       {attendanceSheet.instructor
