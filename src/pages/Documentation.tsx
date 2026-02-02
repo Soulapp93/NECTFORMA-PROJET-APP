@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Book, Users, GraduationCap, UserCheck, Briefcase, ChevronRight, Download, FileText, Calendar, MessageSquare, ClipboardCheck, Settings, Building, BookOpen, Clock, CheckCircle, ArrowRight, Play, Shield, Mail, Bell, User, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 // Import screenshots
@@ -39,89 +51,70 @@ interface DocSection {
 const Documentation = () => {
   const [activeRole, setActiveRole] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [exportOrientation, setExportOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleExportPDF = async () => {
-    setIsExporting(true);
-    toast.info('Génération du PDF en cours... Cela peut prendre quelques secondes.');
+  const exportFileName = useMemo(() => 'NECTFORMA-Guide-Utilisation.pdf', []);
 
-    try {
-      const { default: jsPDF } = await import('jspdf');
-      const { default: html2canvas } = await import('html2canvas');
+  const triggerBrowserDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
-      const content = contentRef.current;
-      if (!content) {
-        throw new Error('Contenu non trouvé');
-      }
+  const exportPdfWithJsPdfHtml = async (orientation: 'portrait' | 'landscape') => {
+    const { default: jsPDF } = await import('jspdf');
 
-      // Créer un PDF A4
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      
-      // Page de titre
-      pdf.setFontSize(28);
-      pdf.setTextColor(139, 92, 246);
-      pdf.text('NECTFORMA', pageWidth / 2, 60, { align: 'center' });
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text("Guide d'utilisation complet", pageWidth / 2, 75, { align: 'center' });
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(150, 150, 150);
-      pdf.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 90, { align: 'center' });
+    const content = contentRef.current;
+    if (!content) throw new Error('Contenu non trouvé');
 
-      // Capture du contenu avec options optimisées
-      const canvas = await html2canvas(content, {
-        scale: 1.5,
+    // Format A4 + orientation
+    const doc = new jsPDF({
+      orientation: orientation === 'portrait' ? 'p' : 'l',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const margin = 10;
+
+    // jsPDF.html gère la pagination en interne (plus fiable sur mobile que la capture géante html2canvas)
+    await doc.html(content, {
+      x: margin,
+      y: margin,
+      margin,
+      autoPaging: 'text',
+      html2canvas: {
+        scale: 0.8,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        allowTaint: true,
-        imageTimeout: 15000,
-        removeContainer: true,
-      });
+      },
+      windowWidth: content.scrollWidth,
+    });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const imgWidth = pageWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Calculer le nombre de pages nécessaires
-      const pageContentHeight = pageHeight - (margin * 2);
-      let yPosition = 0;
-      
-      // Ajouter nouvelle page pour le contenu
-      pdf.addPage();
-      
-      // Boucle pour gérer la pagination correctement
-      while (yPosition < imgHeight) {
-        if (yPosition > 0) {
-          pdf.addPage();
-        }
-        
-        // Calculer la position Y dans l'image source
-        const sourceY = (yPosition / imgHeight) * canvas.height;
-        
-        // Ajouter l'image avec un offset négatif pour "scroller" vers le bas
-        pdf.addImage(
-          imgData,
-          'JPEG',
-          margin,
-          margin - yPosition,
-          imgWidth,
-          imgHeight
-        );
-        
-        yPosition += pageContentHeight;
-      }
+    // Télécharger via Blob (plus compatible iOS qu'un dataURL massif)
+    const blob = doc.output('blob');
+    triggerBrowserDownload(blob, exportFileName);
+  };
 
-      pdf.save('NECTFORMA-Guide-Utilisation.pdf');
-      toast.success('PDF généré avec succès !');
+  const handleExportPDF = async () => {
+    setIsExportDialogOpen(false);
+    setIsExporting(true);
+    toast.info('Génération du PDF en cours...');
+
+    try {
+      await exportPdfWithJsPdfHtml(exportOrientation);
+      toast.success('PDF téléchargé !');
     } catch (error) {
       console.error('Erreur export PDF:', error);
-      toast.error('Erreur lors de la génération du PDF. Veuillez réessayer.');
+      toast.error("Impossible de générer le PDF sur cet appareil. Essayez depuis un ordinateur.");
     } finally {
       setIsExporting(false);
     }
@@ -153,8 +146,8 @@ const Documentation = () => {
               </div>
             </div>
             
-            <Button 
-              onClick={handleExportPDF} 
+            <Button
+              onClick={() => setIsExportDialogOpen(true)}
               disabled={isExporting}
               className="gap-2"
             >
@@ -162,6 +155,39 @@ const Documentation = () => {
               {isExporting ? 'Génération...' : 'Télécharger en PDF'}
             </Button>
           </div>
+
+          <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Exporter la documentation</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Choisissez l’orientation du PDF avant le téléchargement.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <RadioGroup
+                value={exportOrientation}
+                onValueChange={(v) => setExportOrientation(v as 'portrait' | 'landscape')}
+                className="grid gap-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="portrait" id="pdf-orientation-portrait" />
+                  <Label htmlFor="pdf-orientation-portrait">Portrait</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="landscape" id="pdf-orientation-landscape" />
+                  <Label htmlFor="pdf-orientation-landscape">Paysage</Label>
+                </div>
+              </RadioGroup>
+
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isExporting}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleExportPDF} disabled={isExporting}>
+                  Télécharger
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Role filters */}
           <div className="flex flex-wrap gap-2 mt-4">
