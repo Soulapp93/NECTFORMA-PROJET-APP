@@ -40,6 +40,7 @@ import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
 import ResetPassword from './pages/ResetPassword';
 import Activation from './pages/Activation';
 import Notifications from './pages/Notifications';
+import Documentation from './pages/Documentation';
 
 
 const queryClient = new QueryClient({
@@ -129,7 +130,7 @@ const AppContent = () => {
   }
 
   // Pages publiques (sans authentification)
-  const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite'];
+  const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite', '/documentation'];
   // Pages légales accessibles même connecté (CGU, Politique de Confidentialité)
   const legalPages = ['/cgu', '/politique-confidentialite'];
   const isPublicPage = publicPages.includes(location.pathname);
@@ -161,6 +162,7 @@ const AppContent = () => {
         <Route path="/pourquoi-nous" element={<PourquoiNous />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/documentation" element={<Documentation />} />
       </Routes>
     );
   }
