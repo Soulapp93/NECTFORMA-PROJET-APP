@@ -21,6 +21,9 @@ import AnimatedButton from '@/components/landing/AnimatedButton';
 import SectionDivider from '@/components/landing/SectionDivider';
 import GradientBackground from '@/components/landing/GradientBackground';
 
+// Import de la vidéo teaser
+import nectformaTeaserVideo from '@/assets/videos/nectforma-teaser.mp4';
+
 // Imports des captures d'écran
 import tableauDeBordImg from '@/assets/screenshots/tableau-de-bord.png';
 import administrationImg from '@/assets/screenshots/administration.png';
@@ -390,6 +393,28 @@ const Index = () => {
             >
               Découvrir les solutions
             </AnimatedButton>
+          </AnimatedSection>
+
+          {/* Video Teaser Section */}
+          <AnimatedSection animation="scale" delay={500} className="mt-12 md:mt-16 mb-8 md:mb-12 px-2">
+            <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-primary/30 border border-primary/20 glass">
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-accent/20 pointer-events-none z-10 rounded-2xl" />
+              <video 
+                className="w-full h-auto aspect-video object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                poster={tableauDeBordImg}
+              >
+                <source src={nectformaTeaserVideo} type="video/mp4" />
+                Votre navigateur ne supporte pas la lecture de vidéos.
+              </video>
+              <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-border/50">
+                <Play className="h-3 w-3 text-primary" />
+                <span className="text-xs font-medium text-foreground">Aperçu de NECTFORMA</span>
+              </div>
+            </div>
           </AnimatedSection>
 
           <AnimatedSection animation="fade" delay={600} className="flex flex-wrap justify-center gap-6 md:gap-10 text-sm md:text-base text-muted-foreground">
