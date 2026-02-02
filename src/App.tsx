@@ -59,6 +59,21 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   const location = useLocation();
   const { userId, userRole, loading: authLoading } = useCurrentUser();
+  
+  // IMPORTANT: La page de signature doit être vérifiée EN PREMIER pour éviter les 404
+  // après redirection depuis /auth
+  const isSignaturePage = location.pathname.startsWith('/emargement/signer/');
+  if (isSignaturePage) {
+    return (
+      <div className="min-h-screen w-full">
+        <Routes>
+          <Route path="/emargement/signer/:token" element={<SignaturePublique />} />
+        </Routes>
+        <Toaster />
+      </div>
+    );
+  }
+  
   const isAuthPage = location.pathname === '/auth';
   const isCreateEstablishmentPage = location.pathname === '/create-establishment' || location.pathname === '/creer-etablissement';
   const isAcceptInvitationPage = location.pathname === '/accept-invitation';
@@ -112,19 +127,6 @@ const AppContent = () => {
         <Routes>
           <Route path="/activation" element={<Activation />} />
         </Routes>
-      </div>
-    );
-  }
-
-  // Page de signature publique (gère sa propre authentification)
-  const isSignaturePage = location.pathname.startsWith('/emargement/signer/');
-  if (isSignaturePage) {
-    return (
-      <div className="min-h-screen w-full">
-        <Routes>
-          <Route path="/emargement/signer/:token" element={<SignaturePublique />} />
-        </Routes>
-        <Toaster />
       </div>
     );
   }
