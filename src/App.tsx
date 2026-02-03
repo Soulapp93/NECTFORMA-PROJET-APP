@@ -183,7 +183,7 @@ const AppContent = () => {
           <MobileHeader />
 
           {/* Header desktop */}
-          <header className="hidden md:flex h-14 sm:h-16 items-center justify-end border-b bg-white px-4 sm:px-6 sticky top-0 z-40 shadow-sm">
+           <header className="hidden md:flex h-14 sm:h-16 items-center justify-end border-b bg-background px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <NotificationBell />
             </div>
