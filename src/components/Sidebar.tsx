@@ -146,7 +146,7 @@ const Sidebar = () => {
 
   return (
     <SidebarWrapper 
-      className="nect-gradient text-white shadow-2xl border-r-0 overflow-hidden rounded-r-2xl"
+      className="nect-gradient text-white shadow-2xl border-r-0 overflow-hidden rounded-r-2xl z-50"
       collapsible="icon"
       style={{
         '--sidebar-width': '16rem',
