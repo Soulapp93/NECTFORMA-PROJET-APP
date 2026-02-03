@@ -92,11 +92,11 @@ const Sidebar = () => {
   const userDisplayInfo = getUserDisplayInfo();
   
   const administrationSubItems = [
-    { name: 'Utilisateurs', href: '/administration?tab=users', icon: Users },
-    { name: 'Formations', href: '/administration?tab=formations', icon: GraduationCap },
+    { name: 'Gestion des utilisateurs', href: '/administration?tab=users', icon: Users },
+    { name: 'Gestion des formations', href: '/administration?tab=formations', icon: GraduationCap },
     { name: 'Cahiers de texte', href: '/administration?tab=textbooks', icon: BookText },
     { name: 'Emplois du temps', href: '/administration?tab=schedules', icon: CalendarDays },
-    { name: 'Émargement', href: '/administration?tab=attendance', icon: ClipboardCheck },
+    { name: 'Feuilles d\'émargement', href: '/administration?tab=attendance', icon: ClipboardCheck },
   ];
   
   const principalAdminNavigation: NavigationItem[] = [
@@ -149,7 +149,7 @@ const Sidebar = () => {
       className="nect-gradient text-white shadow-2xl border-r-0 overflow-hidden rounded-r-2xl"
       collapsible="icon"
       style={{
-        '--sidebar-width': '15rem',
+        '--sidebar-width': '16rem',
         '--sidebar-width-icon': '4.5rem',
       } as React.CSSProperties}
     >
@@ -317,7 +317,7 @@ const Sidebar = () => {
                         </button>
                         
                         {!collapsed && adminExpanded && (
-                          <div className="ml-6 mt-1 space-y-0.5 border-l-2 border-white/10 pl-3">
+                          <div className="ml-4 mt-2 space-y-1 border-l-2 border-white/20 pl-3">
                             {item.subItems.map((subItem) => {
                               const SubIcon = subItem.icon;
                               const searchParams = new URLSearchParams(subItem.href.split('?')[1]);
@@ -330,19 +330,20 @@ const Sidebar = () => {
                                   key={subItem.name}
                                   to={subItem.href}
                                   className={`
-                                    flex items-center gap-2.5 
-                                    px-2.5 py-2 
-                                    text-[12px] 
+                                    flex items-center gap-2 
+                                    px-3 py-2 
+                                    text-[11px] 
                                     rounded-lg 
                                     transition-all duration-200 
+                                    whitespace-nowrap
                                     ${isSubActive
-                                      ? 'bg-white/15 text-white font-medium'
-                                      : 'text-white/65 hover:bg-white/10 hover:text-white'
+                                      ? 'bg-white/20 text-white font-semibold shadow-sm'
+                                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                                     }
                                   `}
                                 >
-                                  <SubIcon className="h-4 w-4 flex-shrink-0" />
-                                  <span className="truncate">{subItem.name}</span>
+                                  <SubIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                                  <span>{subItem.name}</span>
                                 </NavLink>
                               );
                             })}
