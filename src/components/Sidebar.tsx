@@ -16,14 +16,14 @@ import {
   CalendarDays,
   UsersRound,
   ShieldCheck,
-  Settings,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import {
   Sidebar as SidebarWrapper,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -47,9 +47,9 @@ interface NavigationItem {
 }
 
 const Sidebar = () => {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { userRole, userId } = useCurrentUser();
+  const { userRole } = useCurrentUser();
   const { user: myUser, relation: myRelation, establishment: myEstablishment, role: contextRole } = useMyContext();
   const { establishment } = useEstablishment();
   const { counts: unreadCounts } = useUnreadMessages();
@@ -57,28 +57,19 @@ const Sidebar = () => {
   const [adminExpanded, setAdminExpanded] = useState(location.pathname === '/administration');
 
   const handleLogout = async () => {
-    // Déconnexion Supabase
     await supabase.auth.signOut();
-    
-    // Rediriger vers la page d'authentification
     window.location.href = '/auth';
   };
 
-  // Résoudre l'URL de la photo de profil depuis le bucket avatars
   const getResolvedPhotoUrl = (profilePhotoUrl: string | null | undefined): string | null => {
     if (!profilePhotoUrl) return null;
-    
-    // Si c'est déjà une URL complète, la retourner directement
     if (profilePhotoUrl.startsWith('http://') || profilePhotoUrl.startsWith('https://')) {
       return profilePhotoUrl;
     }
-    
-    // Sinon, construire l'URL publique Supabase
     const { data } = supabase.storage.from('avatars').getPublicUrl(profilePhotoUrl);
     return data?.publicUrl || null;
   };
 
-  // Obtenir les informations utilisateur pour l'affichage
   const getUserDisplayInfo = () => {
     if (myUser) {
       return {
@@ -89,7 +80,6 @@ const Sidebar = () => {
         relationInfo: myRelation
       };
     }
-    
     return {
       name: 'Utilisateur',
       role: contextRole || userRole || 'Utilisateur',
@@ -101,7 +91,6 @@ const Sidebar = () => {
 
   const userDisplayInfo = getUserDisplayInfo();
   
-  // Sous-onglets de l'administration
   const administrationSubItems = [
     { name: 'Gestion des utilisateurs', href: '/administration?tab=users', icon: Users },
     { name: 'Gestion des formations', href: '/administration?tab=formations', icon: GraduationCap },
@@ -110,7 +99,6 @@ const Sidebar = () => {
     { name: 'Feuilles d\'émargement', href: '/administration?tab=attendance', icon: ClipboardCheck },
   ];
   
-  // Navigation pour AdminPrincipal uniquement (avec gestion établissement et profil séparés)
   const principalAdminNavigation: NavigationItem[] = [
     { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Administration', href: '/administration', icon: ShieldCheck, subItems: administrationSubItems },
@@ -122,7 +110,6 @@ const Sidebar = () => {
     { name: 'Mon profil', href: '/compte', icon: UserCircle },
   ];
 
-  // Navigation pour Admin (SANS gestion du compte - réservé à AdminPrincipal)
   const adminNavigation: NavigationItem[] = [
     { name: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Administration', href: '/administration', icon: ShieldCheck, subItems: administrationSubItems },
@@ -133,7 +120,6 @@ const Sidebar = () => {
     { name: 'Mon profil', href: '/compte', icon: UserCircle },
   ];
 
-  // Navigation pour tuteurs (4 onglets - vue apprenti uniquement, pas de tableau de bord)
   const tutorNavigation: NavigationItem[] = [
     { name: 'Formation apprenti', href: '/formations', icon: GraduationCap },
     { name: 'Suivi émargement apprenti', href: '/suivi-emargement', icon: ClipboardCheck },
@@ -141,7 +127,6 @@ const Sidebar = () => {
     { name: 'Mon profil', href: '/compte', icon: UserCircle },
   ];
 
-  // Navigation pour les formateurs et étudiants (avec profil)
   const limitedNavigation: NavigationItem[] = [
     { name: 'Formations', href: '/formations', icon: GraduationCap },
     { name: 'Suivi émargement', href: '/suivi-emargement', icon: ClipboardCheck },
@@ -151,7 +136,6 @@ const Sidebar = () => {
     { name: 'Mon profil', href: '/compte', icon: UserCircle },
   ];
 
-  // Sélectionner la navigation selon le rôle
   const navigation = userRole === 'AdminPrincipal' 
     ? principalAdminNavigation 
     : userRole === 'Admin' 
@@ -160,64 +144,91 @@ const Sidebar = () => {
     ? tutorNavigation
     : limitedNavigation;
 
-  const { toggleSidebar } = useSidebar();
-
   return (
     <SidebarWrapper 
-      className={`${collapsed ? 'w-16' : 'w-56'} nect-gradient sidebar-glow text-white shadow-xl transition-all duration-300 overflow-hidden`}
+      className={`
+        ${collapsed ? 'w-[72px]' : 'w-60'} 
+        nect-gradient 
+        text-white 
+        transition-all duration-300 ease-in-out
+        rounded-r-2xl
+        shadow-2xl
+        border-r-0
+        overflow-hidden
+        relative
+      `}
       collapsible="icon"
     >
-      {/* Header with Logo and Establishment */}
-      <SidebarHeader className="relative z-10 px-2.5 pt-4 pb-3">
-        <div className="flex flex-col gap-2">
-          {/* App Logo and Name - Clickable to toggle sidebar */}
-          <button
-            onClick={toggleSidebar}
-            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer w-full"
-            title={collapsed ? "Ouvrir le menu" : "Réduire le menu"}
-          >
-            {/* Logo Container with glow effect */}
-            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
-              <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-bold text-sm">NF</span>
+      {/* Subtle inner glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/10 pointer-events-none rounded-r-2xl" />
+      
+      {/* Header */}
+      <SidebarHeader className="relative z-10 px-3 pt-5 pb-4">
+        <div className="flex flex-col gap-3">
+          {/* Logo Row with Collapse Button */}
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/20">
+                <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-bold text-base">NF</span>
+              </div>
+              {!collapsed && (
+                <h1 className="text-lg font-semibold text-white tracking-wide font-[Poppins]">NECTFORMA</h1>
+              )}
             </div>
+            
+            {/* Modern Collapse Toggle Button */}
             {!collapsed && (
-              <h1 className="text-base font-semibold text-white tracking-wide">NECTFORMA</h1>
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 group"
+                title="Réduire le menu"
+              >
+                <PanelLeftClose className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+              </button>
             )}
-          </button>
+          </div>
+          
+          {/* Collapse button when collapsed - centered */}
+          {collapsed && (
+            <button
+              onClick={toggleSidebar}
+              className="mx-auto p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200 group"
+              title="Ouvrir le menu"
+            >
+              <PanelLeft className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+            </button>
+          )}
           
           {/* Establishment info */}
           {!collapsed && establishment && (
-            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/5 border border-white/10">
+            <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
               {establishment.logo_url ? (
                 <img 
                   src={establishment.logo_url} 
                   alt={establishment.name}
-                  className="w-6 h-6 rounded object-cover"
+                  className="w-7 h-7 rounded-lg object-cover ring-1 ring-white/20"
                 />
               ) : (
-                <div className="w-6 h-6 bg-white/10 rounded flex items-center justify-center">
-                  <Building2 className="w-3 h-3 text-white/70" />
+                <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-3.5 h-3.5 text-white/70" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white truncate">{establishment.name}</p>
-              </div>
+              <p className="text-xs font-medium text-white/90 truncate flex-1">{establishment.name}</p>
             </div>
           )}
           
-          {/* Mini establishment logo when collapsed */}
           {collapsed && establishment && (
             <div className="flex justify-center">
               {establishment.logo_url ? (
                 <img 
                   src={establishment.logo_url} 
                   alt={establishment.name}
-                  className="w-7 h-7 rounded-md object-cover border border-white/20"
+                  className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/20"
                   title={establishment.name}
                 />
               ) : (
-                <div className="w-7 h-7 bg-white/10 rounded-md flex items-center justify-center border border-white/20" title={establishment.name}>
-                  <Building2 className="w-3 h-3 text-white/70" />
+                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center ring-1 ring-white/20" title={establishment.name}>
+                  <Building2 className="w-4 h-4 text-white/70" />
                 </div>
               )}
             </div>
@@ -225,11 +236,11 @@ const Sidebar = () => {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="relative z-10">
+      <SidebarContent className="relative z-10 px-2">
         {/* User Profile Card */}
-        <div className={`mx-2 mb-4 p-2 rounded-lg bg-white/10 backdrop-blur-sm ${collapsed ? 'flex justify-center' : ''}`}>
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'}`}>
-            <Avatar className="w-8 h-8 flex-shrink-0 border border-white/30" title={collapsed ? userDisplayInfo.name : undefined}>
+        <div className={`mb-4 p-2.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/5 ${collapsed ? 'flex justify-center' : ''}`}>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+            <Avatar className="w-9 h-9 flex-shrink-0 ring-2 ring-white/20" title={collapsed ? userDisplayInfo.name : undefined}>
               <AvatarImage src={userDisplayInfo.profilePhotoUrl || ''} alt={userDisplayInfo.name} />
               <AvatarFallback className="bg-white/20 text-white text-xs font-semibold">
                 {userDisplayInfo.initials}
@@ -237,31 +248,31 @@ const Sidebar = () => {
             </Avatar>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{userDisplayInfo.name}</p>
-                <p className="text-[10px] text-white/70">{userDisplayInfo.role}</p>
+                <p className="text-sm font-semibold text-white truncate leading-tight">{userDisplayInfo.name}</p>
+                <p className="text-[11px] text-white/60 font-medium">{userDisplayInfo.role}</p>
                 {userDisplayInfo.relationInfo && (
-                  <div className="mt-1 p-1.5 rounded bg-white/5 border border-white/10">
+                  <div className="mt-1.5 p-2 rounded-lg bg-white/5 border border-white/10">
                     {userDisplayInfo.relationInfo.type === 'tutor' ? (
                       <div className="space-y-0.5">
-                        <p className="text-[10px] text-white/80 font-medium flex items-center gap-1">
-                          <span className="text-xs">👨‍🏫</span> Mon tuteur
+                        <p className="text-[10px] text-white/70 font-medium flex items-center gap-1">
+                          <span>👨‍🏫</span> Mon tuteur
                         </p>
-                        <p className="text-[10px] text-white font-semibold truncate pl-4">
+                        <p className="text-[11px] text-white font-medium truncate pl-4">
                           {userDisplayInfo.relationInfo.name}
                         </p>
                         {userDisplayInfo.relationInfo.company && (
-                          <p className="text-[10px] text-white/60 truncate pl-4 flex items-center gap-1">
-                            <Building2 className="w-2.5 h-2.5 flex-shrink-0" />
+                          <p className="text-[10px] text-white/50 truncate pl-4 flex items-center gap-1">
+                            <Building2 className="w-2.5 h-2.5" />
                             {userDisplayInfo.relationInfo.company}
                           </p>
                         )}
                       </div>
                     ) : (
                       <div className="space-y-0.5">
-                        <p className="text-[10px] text-white/80 font-medium flex items-center gap-1">
-                          <span className="text-xs">👨‍🎓</span> Mon apprenti
+                        <p className="text-[10px] text-white/70 font-medium flex items-center gap-1">
+                          <span>👨‍🎓</span> Mon apprenti
                         </p>
-                        <p className="text-[10px] text-white font-semibold truncate pl-4">
+                        <p className="text-[11px] text-white font-medium truncate pl-4">
                           {userDisplayInfo.relationInfo.name}
                         </p>
                       </div>
@@ -275,7 +286,7 @@ const Sidebar = () => {
 
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="px-1.5 space-y-0.5">
+            <SidebarMenu className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -287,26 +298,32 @@ const Sidebar = () => {
                       <div>
                         <button
                           onClick={() => setAdminExpanded(!adminExpanded)}
-                          className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} w-full px-2.5 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
-                            isAdminRoute
-                              ? 'bg-white/20 text-white shadow-md backdrop-blur-sm'
-                              : 'text-white/90 hover:bg-white/10'
-                          }`}
+                          className={`
+                            flex items-center ${collapsed ? 'justify-center' : 'justify-between'} 
+                            w-full px-3 py-2.5 
+                            text-[13px] font-medium 
+                            rounded-xl 
+                            transition-all duration-200 
+                            ${isAdminRoute
+                              ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm ring-1 ring-white/20'
+                              : 'text-white/85 hover:bg-white/10 hover:text-white'
+                            }
+                          `}
                           title={collapsed ? item.name : undefined}
                         >
-                          <div className={`flex items-center ${collapsed ? 'justify-center' : ''}`}>
-                            <Icon className={`h-4 w-4 flex-shrink-0 ${collapsed ? '' : 'mr-2'}`} />
+                          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+                            <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                             {!collapsed && <span>{item.name}</span>}
                           </div>
                           {!collapsed && (
-                            adminExpanded ? 
-                              <ChevronDown className="h-3.5 w-3.5 text-white/70" /> : 
-                              <ChevronRight className="h-3.5 w-3.5 text-white/70" />
+                            <div className={`transition-transform duration-200 ${adminExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown className="h-4 w-4 text-white/60" />
+                            </div>
                           )}
                         </button>
                         
                         {!collapsed && adminExpanded && (
-                          <div className="ml-5 mt-0.5 space-y-0.5">
+                          <div className="ml-6 mt-1 space-y-0.5 border-l-2 border-white/10 pl-3">
                             {item.subItems.map((subItem) => {
                               const SubIcon = subItem.icon;
                               const searchParams = new URLSearchParams(subItem.href.split('?')[1]);
@@ -318,14 +335,20 @@ const Sidebar = () => {
                                 <NavLink
                                   key={subItem.name}
                                   to={subItem.href}
-                                  className={`flex items-center px-2 py-1.5 text-xs rounded-md transition-all duration-200 ${
-                                    isSubActive
+                                  className={`
+                                    flex items-center gap-2.5 
+                                    px-2.5 py-2 
+                                    text-[12px] 
+                                    rounded-lg 
+                                    transition-all duration-200 
+                                    ${isSubActive
                                       ? 'bg-white/15 text-white font-medium'
-                                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                  }`}
+                                      : 'text-white/65 hover:bg-white/10 hover:text-white'
+                                    }
+                                  `}
                                 >
-                                  <SubIcon className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
-                                  <span className="text-[11px]">{subItem.name}</span>
+                                  <SubIcon className="h-4 w-4 flex-shrink-0" />
+                                  <span className="truncate">{subItem.name}</span>
                                 </NavLink>
                               );
                             })}
@@ -336,7 +359,6 @@ const Sidebar = () => {
                   );
                 }
                 
-                // Déterminer le badge pour cet item
                 const getBadgeCount = () => {
                   if (item.href === '/messagerie') return unreadCounts.messagerie;
                   if (item.href === '/groupes') return unreadCounts.groupes;
@@ -351,27 +373,34 @@ const Sidebar = () => {
                         to={item.href}
                         end={item.href === '/' || item.href === '/dashboard'}
                         className={({ isActive }) =>
-                          `flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-2.5 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
-                            isActive
-                              ? 'bg-white/20 text-white shadow-md backdrop-blur-sm'
-                              : 'text-white/90 hover:bg-white/10'
-                          }`
+                          `
+                            flex items-center ${collapsed ? 'justify-center' : 'justify-between'} 
+                            px-3 py-2.5 
+                            text-[13px] font-medium 
+                            rounded-xl 
+                            transition-all duration-200 
+                            relative
+                            ${isActive
+                              ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm ring-1 ring-white/20'
+                              : 'text-white/85 hover:bg-white/10 hover:text-white'
+                            }
+                          `
                         }
                         title={collapsed ? item.name : undefined}
                       >
-                        <div className={`flex items-center ${collapsed ? 'justify-center' : ''}`}>
-                          <Icon className={`h-4 w-4 flex-shrink-0 ${collapsed ? '' : 'mr-2'}`} />
+                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+                          <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                           {!collapsed && <span>{item.name}</span>}
                         </div>
                         {badgeCount > 0 && !collapsed && (
                           <Badge 
-                            className="ml-auto bg-success text-success-foreground hover:bg-success/90 text-[10px] min-w-[18px] h-4 flex items-center justify-center rounded-full"
+                            className="bg-success text-success-foreground hover:bg-success/90 text-[10px] min-w-[20px] h-5 flex items-center justify-center rounded-full font-semibold shadow-sm"
                           >
                             {badgeCount > 99 ? '99+' : badgeCount}
                           </Badge>
                         )}
                         {badgeCount > 0 && collapsed && (
-                          <span className="absolute -top-1 -right-1 bg-success text-success-foreground text-[9px] min-w-[14px] h-3.5 rounded-full flex items-center justify-center">
+                          <span className="absolute -top-1 -right-1 bg-success text-success-foreground text-[9px] min-w-[16px] h-4 rounded-full flex items-center justify-center font-semibold shadow-sm">
                             {badgeCount > 99 ? '99+' : badgeCount}
                           </span>
                         )}
@@ -385,13 +414,21 @@ const Sidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="relative z-10 p-2 border-t border-white/10">
+      <SidebarFooter className="relative z-10 p-3 border-t border-white/10">
         <button 
           onClick={handleLogout}
-          className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full px-2.5 py-2 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200`}
+          className={`
+            flex items-center ${collapsed ? 'justify-center' : 'gap-3'} 
+            w-full px-3 py-2.5 
+            text-[13px] font-medium 
+            text-white/80 
+            rounded-xl 
+            hover:bg-white/10 hover:text-white 
+            transition-all duration-200
+          `}
           title={collapsed ? "Déconnexion" : undefined}
         >
-          <LogOut className={`h-4 w-4 flex-shrink-0 ${collapsed ? '' : 'mr-2'}`} />
+          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
           {!collapsed && <span>Déconnexion</span>}
         </button>
       </SidebarFooter>
