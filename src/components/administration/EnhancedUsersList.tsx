@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Search, Filter, Upload, Download, MoreVertical, Edit, Trash2, Mail, X, ChevronDown, KeyRound, Users } from 'lucide-react';
+import { Plus, Search, Upload, Download, Edit, Trash2, X, ChevronDown, KeyRound, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +13,6 @@ import { useUsers } from '@/hooks/useUsers';
 import { useAllUserFormations } from '@/hooks/useAllUserFormations';
 import { useUserTutors } from '@/hooks/useUserTutors';
 import { User, CreateUserData } from '@/services/userService';
-import { invitationService } from '@/services/invitationService';
 import SimplifiedUserModal from './SimplifiedUserModal';
 import UserDetailModal from './UserDetailModal';
 import ExcelImport from './ExcelImport';
@@ -159,44 +158,7 @@ const EnhancedUsersList: React.FC = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
   };
 
-  const sendInvitation = async (user: User) => {
-    const email = user.email.trim().toLowerCase();
-
-    if (!isValidEmail(email)) {
-      toast.error(`Email invalide: ${user.email}`);
-      return;
-    }
-
-    try {
-      // Retrouver une invitation en attente pour cet email
-      const { data: invitation, error: invitationError } = await supabase
-        .from('invitations')
-        .select('id')
-        .eq('email', email)
-        .eq('status', 'pending' as any)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (invitationError) throw invitationError;
-
-      if (!invitation?.id) {
-        toast.error("Aucune invitation en attente trouvée pour cet utilisateur");
-        return;
-      }
-
-      const result = await invitationService.resendInvitation(invitation.id);
-
-      if (result.success) {
-        toast.success(`Invitation renvoyée à ${email}`);
-      } else {
-        toast.error(result.error || "Erreur lors du renvoi de l'invitation");
-      }
-    } catch (err: any) {
-      console.error("Erreur lors du renvoi de l'invitation:", err);
-      toast.error(err?.message || "Erreur lors du renvoi de l'invitation");
-    }
-  };
+  // Note: sendInvitation removed - handleResetPassword now handles both cases automatically
 
   // Helper function to send activation link
   const sendActivationLink = async (email: string, accessToken: string) => {
@@ -763,23 +725,12 @@ const EnhancedUsersList: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      {user.status === 'En attente' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => sendInvitation(user)}
-                          className="h-8 w-8 p-0"
-                          title="Renvoyer l'invitation"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      )}
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleResetPassword(user.email)}
                         className="h-8 w-8 p-0"
-                        title="Réinitialiser le mot de passe"
+                        title={user.is_activated ? "Réinitialiser le mot de passe" : "Renvoyer le lien d'activation"}
                       >
                         <KeyRound className="h-4 w-4" />
                       </Button>
