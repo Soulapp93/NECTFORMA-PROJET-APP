@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.check-expired-attendance-links]
 verify_jwt = false
 
+[functions.cleanup-auth-users]
+verify_jwt = false
+
 [functions.create-establishment]
 verify_jwt = false
 
