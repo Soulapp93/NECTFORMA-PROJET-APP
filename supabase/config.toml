@@ -48,11 +48,11 @@ verify_jwt = false
 [functions.send-signature-link]
 verify_jwt = false
 
-[functions.setup-demo-accounts]
-verify_jwt = false
-
 [functions.validate-activation-token]
 verify_jwt = false
 
 [functions.send-contact-form]
+verify_jwt = false
+
+[functions.invite-super-admin]
 verify_jwt = false
