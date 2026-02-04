@@ -22,8 +22,8 @@ import AnimatedButton from '@/components/landing/AnimatedButton';
 import SectionDivider from '@/components/landing/SectionDivider';
 import GradientBackground from '@/components/landing/GradientBackground';
 
-// Import de la vidéo de présentation
-import nectformaPresentationVideo from '@/assets/videos/nectforma-presentation.mp4';
+// Import du logo NECTFORMA
+import nectformaLogo from '@/assets/logo-nectforma.png';
 
 // Imports des captures d'écran
 import tableauDeBordImg from '@/assets/screenshots/tableau-de-bord.png';
@@ -399,25 +399,39 @@ const Index = () => {
             </AnimatedButton>
           </AnimatedSection>
 
-          {/* Video Teaser Section */}
+          {/* Logo Presentation Section */}
           <AnimatedSection animation="scale" delay={500} className="mt-12 md:mt-16 mb-8 md:mb-12 px-2">
-            <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-primary/30 border border-primary/20 glass">
+            <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-primary/30 border border-primary/20 glass aspect-video flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-accent/20 pointer-events-none z-10 rounded-2xl" />
-              <video 
-                className="w-full h-auto aspect-video object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-                poster={tableauDeBordImg}
-              >
-                <source src={nectformaPresentationVideo} type="video/mp4" />
-                Votre navigateur ne supporte pas la lecture de vidéos.
-              </video>
-              <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full border border-border/50">
-                <Play className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium text-foreground">Aperçu de NECTFORMA</span>
+              
+              {/* Cercles animés en arrière-plan */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute w-64 h-64 md:w-96 md:h-96 rounded-full border border-primary/20 animate-[pulse_3s_ease-in-out_infinite]" />
+                <div className="absolute w-48 h-48 md:w-72 md:h-72 rounded-full border border-accent/30 animate-[pulse_2.5s_ease-in-out_infinite_0.5s]" />
+                <div className="absolute w-32 h-32 md:w-48 md:h-48 rounded-full border border-primary/40 animate-[pulse_2s_ease-in-out_infinite_1s]" />
               </div>
+              
+              {/* Logo et nom */}
+              <div className="relative z-20 flex flex-col items-center justify-center space-y-6 md:space-y-8">
+                <div className="animate-fade-in">
+                  <img 
+                    src={nectformaLogo} 
+                    alt="NECTFORMA Logo" 
+                    className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 object-contain drop-shadow-2xl animate-[scale-in_0.6s_ease-out] hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="text-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                  <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold gradient-text-animated tracking-tight">
+                    NECTFORMA
+                  </h2>
+                  <p className="mt-2 md:mt-4 text-muted-foreground text-sm md:text-lg font-medium animate-fade-in" style={{ animationDelay: '0.6s' }}>
+                    La gestion de formation simplifiée
+                  </p>
+                </div>
+              </div>
+              
+              {/* Effet de brillance */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_infinite] pointer-events-none" style={{ transform: 'skewX(-20deg)' }} />
             </div>
           </AnimatedSection>
 

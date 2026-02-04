@@ -217,9 +217,19 @@ export default {
 						transform: 'translateY(-5px)'
 					}
 				},
-				'scale-up': {
+'scale-up': {
 					from: {
 						transform: 'scale(0.95)',
+						opacity: '0'
+					},
+					to: {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
+				},
+				'scale-in': {
+					from: {
+						transform: 'scale(0.8)',
 						opacity: '0'
 					},
 					to: {
