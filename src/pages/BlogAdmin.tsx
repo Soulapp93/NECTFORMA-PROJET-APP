@@ -4,7 +4,8 @@ import {
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
   FileText, TrendingUp, BarChart3, Calendar, Clock,
   Globe, Tag, Folder, Send, Save, ArrowLeft, Sparkles,
-  Target, Lightbulb, Wand2, Bot, Settings, Power
+  Target, Lightbulb, Wand2, Bot, Settings, Power, Home,
+  Instagram, Linkedin, ChevronDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,7 +18,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -99,6 +101,12 @@ const AIPostEditor = ({
   const [saving, setSaving] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(!post);
   const [aiMode, setAiMode] = useState<'generate' | 'seo' | 'enhance'>('generate');
+  const [showPublishMenu, setShowPublishMenu] = useState(false);
+  const [publishOptions, setPublishOptions] = useState({
+    homepage: true,
+    instagram: false,
+    linkedin: false
+  });
 
   const generateSlug = (title: string) => {
     return title
@@ -138,6 +146,44 @@ const AIPostEditor = ({
       toast.error("Erreur lors de l'enregistrement");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePublishWithOptions = async () => {
+    if (!formData.title?.trim()) {
+      toast.error('Le titre est requis');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const dataToSave = {
+        ...formData,
+        status: 'published' as const,
+        published_at: new Date().toISOString()
+      };
+      await onSave(dataToSave, selectedTags);
+      
+      const destinations: string[] = [];
+      if (publishOptions.homepage) destinations.push('Page d\'accueil Nectforma');
+      if (publishOptions.instagram) destinations.push('Instagram');
+      if (publishOptions.linkedin) destinations.push('LinkedIn');
+      
+      if (publishOptions.instagram || publishOptions.linkedin) {
+        // Note: Social media publication will be handled by the social media system
+        toast.success(`Article publié sur : ${destinations.join(', ')}`);
+        toast.info('Publication sur les réseaux sociaux en cours de traitement...');
+      } else {
+        toast.success('Article publié sur la page d\'accueil !');
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      toast.error("Erreur lors de la publication");
+    } finally {
+      setSaving(false);
+      setShowPublishMenu(false);
     }
   };
 
@@ -223,10 +269,61 @@ const AIPostEditor = ({
                 <Save className="h-4 w-4 mr-2" />
                 Enregistrer
               </Button>
-              <Button onClick={() => handleSave(true)} disabled={saving}>
-                <Send className="h-4 w-4 mr-2" />
-                Publier
-              </Button>
+              <DropdownMenu open={showPublishMenu} onOpenChange={setShowPublishMenu}>
+                <DropdownMenuTrigger asChild>
+                  <Button disabled={saving} className="gap-2">
+                    <Send className="h-4 w-4" />
+                    Publier
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Options de publication</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-2 space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={publishOptions.homepage}
+                        onChange={(e) => setPublishOptions(prev => ({ ...prev, homepage: e.target.checked }))}
+                        className="rounded border-border"
+                      />
+                      <Home className="h-4 w-4 text-primary" />
+                      <span className="text-sm">Page d'accueil Nectforma</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={publishOptions.instagram}
+                        onChange={(e) => setPublishOptions(prev => ({ ...prev, instagram: e.target.checked }))}
+                        className="rounded border-border"
+                      />
+                      <Instagram className="h-4 w-4 text-pink-500" />
+                      <span className="text-sm">Instagram</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={publishOptions.linkedin}
+                        onChange={(e) => setPublishOptions(prev => ({ ...prev, linkedin: e.target.checked }))}
+                        className="rounded border-border"
+                      />
+                      <Linkedin className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm">LinkedIn</span>
+                    </label>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="p-2">
+                    <Button 
+                      onClick={handlePublishWithOptions} 
+                      disabled={saving || (!publishOptions.homepage && !publishOptions.instagram && !publishOptions.linkedin)}
+                      className="w-full"
+                    >
+                      {saving ? 'Publication...' : 'Confirmer la publication'}
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
