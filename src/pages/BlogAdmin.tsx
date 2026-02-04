@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
-  FileText, TrendingUp, Users, BarChart3, Calendar, Clock,
-  Globe, Tag, Folder, Send, Save, ArrowLeft
+  FileText, TrendingUp, BarChart3, Calendar, Clock,
+  Globe, Tag, Folder, Send, Save, ArrowLeft, Sparkles,
+  Target, Lightbulb, Wand2, Bot, Settings, Power
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -27,6 +28,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import {
@@ -34,6 +36,11 @@ import {
   publishPost, unpublishPost, createCategory, deleteCategory, createTag, deleteTag,
   setPostTags, getBlogStats, BlogPost, BlogCategory, BlogTag, BlogStats
 } from '@/services/blogService';
+import { AIGeneratedArticle } from '@/services/blogAIService';
+import { AIContentGenerator } from '@/components/blog-admin/AIContentGenerator';
+import { AISEOOptimizer } from '@/components/blog-admin/AISEOOptimizer';
+import { AITopicPlanner } from '@/components/blog-admin/AITopicPlanner';
+import { AIContentEnhancer } from '@/components/blog-admin/AIContentEnhancer';
 import logoNf from '@/assets/logo-nf.png';
 
 const StatCard = ({ title, value, icon: Icon, trend }: { 
@@ -55,18 +62,24 @@ const StatCard = ({ title, value, icon: Icon, trend }: {
   </Card>
 );
 
-const PostEditor = ({ 
+// ============================================
+// AI-ENHANCED POST EDITOR
+// ============================================
+
+const AIPostEditor = ({ 
   post, 
   categories,
   tags,
   onSave, 
-  onClose 
+  onClose,
+  initialTopic
 }: { 
   post?: BlogPost | null;
   categories: BlogCategory[];
   tags: BlogTag[];
   onSave: (data: Partial<BlogPost>, tagIds: string[]) => Promise<void>;
   onClose: () => void;
+  initialTopic?: string;
 }) => {
   const [formData, setFormData] = useState<Partial<BlogPost>>({
     title: post?.title || '',
@@ -84,6 +97,8 @@ const PostEditor = ({
     post?.tags?.map(t => t.id) || []
   );
   const [saving, setSaving] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(!post);
+  const [aiMode, setAiMode] = useState<'generate' | 'seo' | 'enhance'>('generate');
 
   const generateSlug = (title: string) => {
     return title
@@ -126,184 +141,316 @@ const PostEditor = ({
     }
   };
 
+  // Import AI-generated article
+  const handleAIArticleGenerated = (article: AIGeneratedArticle) => {
+    setFormData(prev => ({
+      ...prev,
+      title: article.title,
+      slug: article.slug,
+      excerpt: article.excerpt,
+      content: article.content,
+      seo_title: article.seo_title,
+      seo_description: article.seo_description,
+      seo_keywords: article.seo_keywords
+    }));
+    
+    // Auto-select matching category
+    const matchingCat = categories.find(c => 
+      c.name.toLowerCase().includes(article.suggested_category.toLowerCase())
+    );
+    if (matchingCat) {
+      setFormData(prev => ({ ...prev, category_id: matchingCat.id }));
+    }
+
+    // Auto-select matching tags
+    const matchingTagIds = tags
+      .filter(t => article.suggested_tags.some(st => 
+        t.name.toLowerCase().includes(st.toLowerCase()) ||
+        st.toLowerCase().includes(t.name.toLowerCase())
+      ))
+      .map(t => t.id);
+    if (matchingTagIds.length > 0) {
+      setSelectedTags(matchingTagIds);
+    }
+
+    setShowAIPanel(false);
+    toast.success('Article importé ! Vous pouvez le modifier avant publication.');
+  };
+
+  // Apply SEO suggestions
+  const handleApplySEOSuggestions = (suggestions: {
+    title?: string;
+    seo_description?: string;
+    seo_keywords?: string[];
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      ...(suggestions.title && { seo_title: suggestions.title }),
+      ...(suggestions.seo_description && { seo_description: suggestions.seo_description }),
+      ...(suggestions.seo_keywords && { seo_keywords: suggestions.seo_keywords })
+    }));
+  };
+
+  // Apply rewritten content
+  const handleApplyContent = (content: string) => {
+    setFormData(prev => ({ ...prev, content }));
+    toast.success('Contenu mis à jour');
+  };
+
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-auto">
-      <header className="sticky top-0 bg-background border-b z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-lg font-semibold">
-              {post ? 'Modifier l\'article' : 'Nouvel article'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              Enregistrer
-            </Button>
-            <Button onClick={() => handleSave(true)} disabled={saving}>
-              <Send className="h-4 w-4 mr-2" />
-              Publier
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="grid lg:grid-cols-[1fr_300px] gap-8">
-          {/* Main Content */}
-          <div className="space-y-6">
-            <div>
-              <Input
-                placeholder="Titre de l'article"
-                value={formData.title || ''}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                className="text-2xl font-bold h-auto py-3 border-0 border-b rounded-none focus-visible:ring-0 px-0"
-              />
+    <div className="fixed inset-0 bg-background z-50 overflow-hidden flex">
+      {/* Main Editor */}
+      <div className={`flex-1 overflow-auto ${showAIPanel ? 'lg:mr-[450px]' : ''}`}>
+        <header className="sticky top-0 bg-background border-b z-10">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-lg font-semibold">
+                {post ? 'Modifier l\'article' : 'Nouvel article'}
+              </h1>
             </div>
-
-            <div>
-              <Label>Extrait</Label>
-              <Textarea
-                placeholder="Un court résumé de l'article..."
-                value={formData.excerpt || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label>Contenu</Label>
-              <Textarea
-                placeholder="Écrivez votre article ici... (HTML supporté)"
-                value={formData.content || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                rows={20}
-                className="font-mono text-sm"
-              />
+            <div className="flex items-center gap-2">
+              <Button 
+                variant={showAIPanel ? 'secondary' : 'outline'}
+                onClick={() => setShowAIPanel(!showAIPanel)}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                IA
+              </Button>
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+                <Save className="h-4 w-4 mr-2" />
+                Enregistrer
+              </Button>
+              <Button onClick={() => handleSave(true)} disabled={saving}>
+                <Send className="h-4 w-4 mr-2" />
+                Publier
+              </Button>
             </div>
           </div>
+        </header>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Paramètres</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Slug URL</Label>
-                  <Input
-                    value={formData.slug || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                    placeholder="mon-article"
-                  />
-                </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <div className="grid lg:grid-cols-[1fr_280px] gap-8">
+            {/* Main Content */}
+            <div className="space-y-6">
+              <div>
+                <Input
+                  placeholder="Titre de l'article"
+                  value={formData.title || ''}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="text-2xl font-bold h-auto py-3 border-0 border-b rounded-none focus-visible:ring-0 px-0"
+                />
+              </div>
 
-                <div>
-                  <Label>Image de couverture</Label>
-                  <Input
-                    value={formData.cover_image_url || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                    placeholder="https://..."
-                  />
-                </div>
+              <div>
+                <Label>Extrait</Label>
+                <Textarea
+                  placeholder="Un court résumé de l'article..."
+                  value={formData.excerpt || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
+                  rows={3}
+                />
+              </div>
 
-                <div>
-                  <Label>Catégorie</Label>
-                  <Select 
-                    value={formData.category_id || ''} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Contenu</Label>
+                <Textarea
+                  placeholder="Écrivez votre article ici... (HTML supporté)"
+                  value={formData.content || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                  rows={20}
+                  className="font-mono text-sm"
+                />
+              </div>
+            </div>
 
-                <div>
-                  <Label>Tags</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {tags.map(tag => (
-                      <Badge
-                        key={tag.id}
-                        variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setSelectedTags(prev => 
-                            prev.includes(tag.id) 
-                              ? prev.filter(id => id !== tag.id)
-                              : [...prev, tag.id]
-                          );
-                        }}
-                      >
-                        {tag.name}
-                      </Badge>
-                    ))}
+            {/* Sidebar */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Paramètres</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Slug URL</Label>
+                    <Input
+                      value={formData.slug || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                      placeholder="mon-article"
+                    />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  SEO
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Titre SEO</Label>
-                  <Input
-                    value={formData.seo_title || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
-                    placeholder="Titre pour les moteurs de recherche"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(formData.seo_title || formData.title || '').length}/60 caractères
-                  </p>
-                </div>
+                  <div>
+                    <Label>Image de couverture</Label>
+                    <Input
+                      value={formData.cover_image_url || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cover_image_url: e.target.value }))}
+                      placeholder="https://..."
+                    />
+                  </div>
 
-                <div>
-                  <Label>Description SEO</Label>
-                  <Textarea
-                    value={formData.seo_description || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
-                    placeholder="Description pour les moteurs de recherche"
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(formData.seo_description || formData.excerpt || '').length}/160 caractères
-                  </p>
-                </div>
+                  <div>
+                    <Label>Catégorie</Label>
+                    <Select 
+                      value={formData.category_id || ''} 
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div>
-                  <Label>Mots-clés</Label>
-                  <Input
-                    value={formData.seo_keywords?.join(', ') || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      seo_keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
-                    }))}
-                    placeholder="mot1, mot2, mot3"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  <div>
+                    <Label>Tags</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {tags.map(tag => (
+                        <Badge
+                          key={tag.id}
+                          variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedTags(prev => 
+                              prev.includes(tag.id) 
+                                ? prev.filter(id => id !== tag.id)
+                                : [...prev, tag.id]
+                            );
+                          }}
+                        >
+                          {tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    SEO
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Titre SEO</Label>
+                    <Input
+                      value={formData.seo_title || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
+                      placeholder="Titre pour les moteurs de recherche"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(formData.seo_title || formData.title || '').length}/60 caractères
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label>Description SEO</Label>
+                    <Textarea
+                      value={formData.seo_description || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
+                      placeholder="Description pour les moteurs de recherche"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(formData.seo_description || formData.excerpt || '').length}/160 caractères
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label>Mots-clés</Label>
+                    <Input
+                      value={formData.seo_keywords?.join(', ') || ''}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        seo_keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
+                      }))}
+                      placeholder="mot1, mot2, mot3"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* AI Panel */}
+      {showAIPanel && (
+        <div className="fixed right-0 top-0 bottom-0 w-full lg:w-[450px] bg-background border-l overflow-auto z-20">
+          <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Assistant IA</h2>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
+              ×
+            </Button>
+          </div>
+
+          <div className="p-4">
+            <Tabs value={aiMode} onValueChange={(v) => setAiMode(v as typeof aiMode)}>
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="generate">
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Générer
+                </TabsTrigger>
+                <TabsTrigger value="seo">
+                  <Target className="h-4 w-4 mr-1" />
+                  SEO
+                </TabsTrigger>
+                <TabsTrigger value="enhance">
+                  <Wand2 className="h-4 w-4 mr-1" />
+                  Améliorer
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="mt-4">
+                <TabsContent value="generate">
+                  <AIContentGenerator 
+                    categories={categories}
+                    onArticleGenerated={handleAIArticleGenerated}
+                  />
+                </TabsContent>
+
+                <TabsContent value="seo">
+                  <AISEOOptimizer
+                    title={formData.title || ''}
+                    content={formData.content || ''}
+                    seo_description={formData.seo_description || undefined}
+                    seo_keywords={formData.seo_keywords || undefined}
+                    onApplySuggestions={handleApplySEOSuggestions}
+                  />
+                </TabsContent>
+
+                <TabsContent value="enhance">
+                  <AIContentEnhancer
+                    title={formData.title || ''}
+                    excerpt={formData.excerpt || ''}
+                    content={formData.content || ''}
+                    onApplyContent={handleApplyContent}
+                  />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// ============================================
+// MAIN BLOG ADMIN
+// ============================================
 
 const BlogAdmin = () => {
   const navigate = useNavigate();
@@ -312,16 +459,17 @@ const BlogAdmin = () => {
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [tags, setTags] = useState<BlogTag[]>([]);
   const [stats, setStats] = useState<BlogStats | null>(null);
-  // IMPORTANT: ne pas bloquer l'UI en "chargement" si l'utilisateur n'a pas (encore)
-  // les droits blog. Le chargement ne doit être vrai que pendant `loadData()`.
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingPost, setEditingPost] = useState<BlogPost | null | 'new'>(null);
+  const [initialTopic, setInitialTopic] = useState<string>('');
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newTagName, setNewTagName] = useState('');
+  const [activeTab, setActiveTab] = useState('posts');
+  const [autonomousMode, setAutonomousMode] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !canManageBlog) {
@@ -427,14 +575,18 @@ const BlogAdmin = () => {
     }
   };
 
+  // Handle topic selection from AI planner
+  const handleSelectTopic = (topic: string) => {
+    setInitialTopic(topic);
+    setEditingPost('new');
+  };
+
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  // Attendre seulement la résolution des droits (authLoading).
-  // Ensuite, charger les données UNIQUEMENT si on a les droits.
   if (authLoading || (canManageBlog && loading)) {
     return (
       <div className="min-h-screen bg-background p-8">
@@ -456,9 +608,9 @@ const BlogAdmin = () => {
           <img src={logoNf} alt="Nectforma" className="h-10 mx-auto" />
           <h1 className="text-xl font-semibold">Accès refusé</h1>
           <p className="text-sm text-muted-foreground">
-            Vous n’avez pas les droits nécessaires pour accéder à l’administration du blog.
+            Vous n'avez pas les droits nécessaires pour accéder à l'administration du blog.
           </p>
-          <Button onClick={() => navigate('/')}>Retour à l’accueil</Button>
+          <Button onClick={() => navigate('/')}>Retour à l'accueil</Button>
         </div>
       </div>
     );
@@ -484,9 +636,27 @@ const BlogAdmin = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src={logoNf} alt="Nectforma" className="h-8" />
-            <h1 className="text-xl font-bold">Blog Admin</h1>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              Blog Admin
+              <Badge variant="outline" className="text-xs">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI-Powered
+              </Badge>
+            </h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Autonomous Mode Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+              <Power className={`h-4 w-4 ${autonomousMode ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <span className="text-sm">Mode Auto</span>
+              <Switch
+                checked={autonomousMode}
+                onCheckedChange={(checked) => {
+                  setAutonomousMode(checked);
+                  toast.success(checked ? 'Mode autonome activé' : 'Mode autonome désactivé');
+                }}
+              />
+            </div>
             <Button variant="outline" onClick={() => window.open('/blog', '_blank')}>
               <Eye className="h-4 w-4 mr-2" />
               Voir le blog
@@ -510,12 +680,54 @@ const BlogAdmin = () => {
           </div>
         )}
 
-        <Tabs defaultValue="posts" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="posts">Articles</TabsTrigger>
-            <TabsTrigger value="categories">Catégories</TabsTrigger>
-            <TabsTrigger value="tags">Tags</TabsTrigger>
-            {canViewAnalytics && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
+        {/* Autonomous Mode Banner */}
+        {autonomousMode && (
+          <Card className="mb-6 border-green-500/50 bg-green-500/5">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Bot className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="font-medium">Mode Autonome Actif</p>
+                  <p className="text-sm text-muted-foreground">
+                    L'IA génère et publie automatiquement des articles optimisés SEO
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-green-500">En cours</Badge>
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-background border">
+            <TabsTrigger value="posts">
+              <FileText className="h-4 w-4 mr-2" />
+              Articles
+            </TabsTrigger>
+            <TabsTrigger value="ai-generator">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Générateur IA
+            </TabsTrigger>
+            <TabsTrigger value="ai-planner">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Planificateur
+            </TabsTrigger>
+            <TabsTrigger value="categories">
+              <Folder className="h-4 w-4 mr-2" />
+              Catégories
+            </TabsTrigger>
+            <TabsTrigger value="tags">
+              <Tag className="h-4 w-4 mr-2" />
+              Tags
+            </TabsTrigger>
+            {canViewAnalytics && (
+              <TabsTrigger value="analytics">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Posts Tab */}
@@ -635,6 +847,28 @@ const BlogAdmin = () => {
             </Card>
           </TabsContent>
 
+          {/* AI Generator Tab */}
+          <TabsContent value="ai-generator">
+            <AIContentGenerator 
+              categories={categories}
+              onArticleGenerated={(article) => {
+                // Create a new post with the generated content
+                setInitialTopic('');
+                setEditingPost('new');
+                // Note: The AIPostEditor will handle importing the article
+                toast.info('Ouvrez l\'éditeur pour générer un article avec l\'IA');
+              }}
+            />
+          </TabsContent>
+
+          {/* AI Planner Tab */}
+          <TabsContent value="ai-planner">
+            <AITopicPlanner
+              existingTopics={posts.map(p => p.title)}
+              onSelectTopic={handleSelectTopic}
+            />
+          </TabsContent>
+
           {/* Categories Tab */}
           <TabsContent value="categories">
             <Card>
@@ -745,7 +979,7 @@ const BlogAdmin = () => {
                               key={i}
                               className="flex-1 bg-primary rounded-t min-h-[4px]"
                               style={{ 
-                                height: `${Math.max(4, (day.views / Math.max(...stats.viewsByDay.map(d => d.views)) * 100))}%` 
+                                height: `${Math.max(4, (day.views / Math.max(...stats.viewsByDay.map(d => d.views), 1) * 100))}%` 
                               }}
                               title={`${day.date}: ${day.views} vues`}
                             />
@@ -761,14 +995,18 @@ const BlogAdmin = () => {
         </Tabs>
       </main>
 
-      {/* Post Editor */}
+      {/* AI Post Editor */}
       {editingPost && (
-        <PostEditor
+        <AIPostEditor
           post={editingPost === 'new' ? null : editingPost}
           categories={categories}
           tags={tags}
           onSave={handleSavePost}
-          onClose={() => setEditingPost(null)}
+          onClose={() => {
+            setEditingPost(null);
+            setInitialTopic('');
+          }}
+          initialTopic={initialTopic}
         />
       )}
 
