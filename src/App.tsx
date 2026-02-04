@@ -43,6 +43,10 @@ import ResetPassword from './pages/ResetPassword';
 import Activation from './pages/Activation';
 import Notifications from './pages/Notifications';
 import Documentation from './pages/Documentation';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
+import BlogAdmin from './pages/BlogAdmin';
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 
 
 const queryClient = new QueryClient({
@@ -144,7 +148,7 @@ const AppContent = () => {
   }
 
   // Pages publiques (sans authentification)
-  const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite', '/documentation'];
+  const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite', '/documentation', '/blog', '/blog-admin'];
   // Pages légales accessibles même connecté (CGU, Politique de Confidentialité)
   const legalPages = ['/cgu', '/politique-confidentialite'];
   const isPublicPage = publicPages.includes(location.pathname);
@@ -172,15 +176,21 @@ const AppContent = () => {
     }
 
     return (
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/solutions" element={<Solutions />} />
-        <Route path="/fonctionnalites" element={<Fonctionnalites />} />
-        <Route path="/pourquoi-nous" element={<PourquoiNous />} />
-        <Route path="/cgu" element={<CGU />} />
-        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
-        <Route path="/documentation" element={<Documentation />} />
-      </Routes>
+      <>
+        <GoogleAnalytics measurementId={import.meta.env.VITE_GA_MEASUREMENT_ID || ''} />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/solutions" element={<Solutions />} />
+          <Route path="/fonctionnalites" element={<Fonctionnalites />} />
+          <Route path="/pourquoi-nous" element={<PourquoiNous />} />
+          <Route path="/cgu" element={<CGU />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+          <Route path="/documentation" element={<Documentation />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/blog-admin" element={<BlogAdmin />} />
+        </Routes>
+      </>
     );
   }
 
