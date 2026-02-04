@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -13,6 +13,7 @@ import AdminRoute from './components/AdminRoute';
 import AdminPrincipalRoute from './components/AdminPrincipalRoute';
 import TutorRestrictedRoute from './components/TutorRestrictedRoute';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { monitoring } from '@/utils/monitoring';
 import Dashboard from './pages/Dashboard';
 import Administration from './pages/Administration';
 import Formations from './pages/Formations';
@@ -60,6 +61,16 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   const location = useLocation();
   const { userId, userRole, loading: authLoading } = useCurrentUser();
+  
+  // Initialize monitoring with user ID
+  useEffect(() => {
+    monitoring.setUserId(userId || null);
+  }, [userId]);
+
+  // Track page load performance
+  useEffect(() => {
+    monitoring.trackPageLoad();
+  }, []);
   
   // IMPORTANT: La page de signature doit être vérifiée EN PREMIER pour éviter les 404
   // après redirection depuis /auth
