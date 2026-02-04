@@ -287,17 +287,17 @@ export async function createPost(post: Partial<BlogPost>): Promise<BlogPost> {
     title: post.title || 'Untitled',
     slug: post.slug || `post-${Date.now()}`,
     content: post.content || '',
-    excerpt: post.excerpt,
-    cover_image_url: post.cover_image_url,
-    category_id: post.category_id,
+    excerpt: post.excerpt || null,
+    cover_image_url: post.cover_image_url || null,
+    category_id: post.category_id || null,
     author_id: user.id,
-    seo_title: post.seo_title,
-    seo_description: post.seo_description,
-    seo_keywords: post.seo_keywords,
-    canonical_url: post.canonical_url,
+    seo_title: post.seo_title || null,
+    seo_description: post.seo_description || null,
+    seo_keywords: post.seo_keywords || null,
+    canonical_url: post.canonical_url || null,
     status: post.status || 'draft',
-    published_at: post.published_at,
-    scheduled_for: post.scheduled_for
+    published_at: post.published_at || null,
+    scheduled_for: post.scheduled_for || null
   };
 
   const { data, error } = await supabase
