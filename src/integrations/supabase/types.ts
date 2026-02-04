@@ -1389,6 +1389,288 @@ export type Database = {
           },
         ]
       }
+      social_analytics: {
+        Row: {
+          clicks: number | null
+          comments: number | null
+          created_at: string
+          engagement_rate: number | null
+          fetched_at: string
+          id: string
+          impressions: number | null
+          likes: number | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          raw_data: Json | null
+          reach: number | null
+          shares: number | null
+          social_post_id: string
+          views: number | null
+          watch_time_seconds: number | null
+        }
+        Insert: {
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          fetched_at?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          raw_data?: Json | null
+          reach?: number | null
+          shares?: number | null
+          social_post_id: string
+          views?: number | null
+          watch_time_seconds?: number | null
+        }
+        Update: {
+          clicks?: number | null
+          comments?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          fetched_at?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          raw_data?: Json | null
+          reach?: number | null
+          shares?: number | null
+          social_post_id?: string
+          views?: number | null
+          watch_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_analytics_social_post_id_fkey"
+            columns: ["social_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_media_connections: {
+        Row: {
+          access_token: string | null
+          account_id: string | null
+          account_name: string | null
+          channel_id: string | null
+          connection_status: string
+          created_at: string
+          id: string
+          last_connected_at: string | null
+          last_error: string | null
+          metadata: Json | null
+          page_id: string | null
+          permissions_scope: string[] | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          channel_id?: string | null
+          connection_status?: string
+          created_at?: string
+          id?: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          metadata?: Json | null
+          page_id?: string | null
+          permissions_scope?: string[] | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          account_id?: string | null
+          account_name?: string | null
+          channel_id?: string | null
+          connection_status?: string
+          created_at?: string
+          id?: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          metadata?: Json | null
+          page_id?: string | null
+          permissions_scope?: string[] | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      social_posts: {
+        Row: {
+          ai_generated: boolean | null
+          auto_published: boolean | null
+          blog_post_id: string | null
+          caption: string
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          external_post_id: string | null
+          external_post_url: string | null
+          hashtags: string[] | null
+          id: string
+          media_urls: string[] | null
+          metadata: Json | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          published_at: string | null
+          retry_count: number | null
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["social_post_status"]
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          auto_published?: boolean | null
+          blog_post_id?: string | null
+          caption: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          external_post_id?: string | null
+          external_post_url?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_urls?: string[] | null
+          metadata?: Json | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["social_post_status"]
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          auto_published?: boolean | null
+          blog_post_id?: string | null
+          caption?: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          external_post_id?: string | null
+          external_post_url?: string | null
+          hashtags?: string[] | null
+          id?: string
+          media_urls?: string[] | null
+          metadata?: Json | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          published_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["social_post_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_publication_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          error_message: string | null
+          id: string
+          platform: Database["public"]["Enums"]["social_platform"]
+          social_post_id: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          platform: Database["public"]["Enums"]["social_platform"]
+          social_post_id?: string | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          platform?: Database["public"]["Enums"]["social_platform"]
+          social_post_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_publication_logs_social_post_id_fkey"
+            columns: ["social_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_publishing_settings: {
+        Row: {
+          auto_publish_enabled: boolean | null
+          auto_publish_platforms:
+            | Database["public"]["Enums"]["social_platform"][]
+            | null
+          best_posting_times: Json | null
+          brand_tone: string | null
+          content_rules: Json | null
+          created_at: string
+          default_hashtags: Json | null
+          forbidden_words: string[] | null
+          id: string
+          require_approval: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          auto_publish_enabled?: boolean | null
+          auto_publish_platforms?:
+            | Database["public"]["Enums"]["social_platform"][]
+            | null
+          best_posting_times?: Json | null
+          brand_tone?: string | null
+          content_rules?: Json | null
+          created_at?: string
+          default_hashtags?: Json | null
+          forbidden_words?: string[] | null
+          id?: string
+          require_approval?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          auto_publish_enabled?: boolean | null
+          auto_publish_platforms?:
+            | Database["public"]["Enums"]["social_platform"][]
+            | null
+          best_posting_times?: Json | null
+          brand_tone?: string | null
+          content_rules?: Json | null
+          created_at?: string
+          default_hashtags?: Json | null
+          forbidden_words?: string[] | null
+          id?: string
+          require_approval?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       submission_files: {
         Row: {
           created_at: string | null
@@ -1912,6 +2194,22 @@ export type Database = {
         | "blog_editor"
         | "seo_manager"
         | "analytics_viewer"
+      social_platform:
+        | "linkedin"
+        | "twitter"
+        | "facebook"
+        | "instagram"
+        | "tiktok"
+        | "youtube"
+        | "threads"
+        | "pinterest"
+      social_post_status:
+        | "draft"
+        | "scheduled"
+        | "publishing"
+        | "published"
+        | "failed"
+        | "cancelled"
       user_role: "AdminPrincipal" | "Admin" | "Formateur" | "Étudiant"
     }
     CompositeTypes: {
@@ -2048,6 +2346,24 @@ export const Constants = {
         "blog_editor",
         "seo_manager",
         "analytics_viewer",
+      ],
+      social_platform: [
+        "linkedin",
+        "twitter",
+        "facebook",
+        "instagram",
+        "tiktok",
+        "youtube",
+        "threads",
+        "pinterest",
+      ],
+      social_post_status: [
+        "draft",
+        "scheduled",
+        "publishing",
+        "published",
+        "failed",
+        "cancelled",
       ],
       user_role: ["AdminPrincipal", "Admin", "Formateur", "Étudiant"],
     },
