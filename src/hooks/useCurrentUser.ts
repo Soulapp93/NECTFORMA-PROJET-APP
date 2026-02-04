@@ -2,6 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { rpcWithRetry, retryQuery } from '@/lib/supabaseRetry';
 
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(`${label}: timeout after ${ms}ms`)), ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+};
+
 export const useCurrentUser = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -11,36 +24,46 @@ export const useCurrentUser = () => {
 
   const fetchUserRole = useCallback(async (uid: string, mounted: { current: boolean }) => {
     try {
-      // D'abord vérifier si c'est un Super Admin (rôle de plateforme)
-      const { data: platformRoles, error: platformError } = await supabase
-        .from('platform_user_roles')
-        .select('role')
-        .eq('user_id', uid);
+      // IMPORTANT: ne pas lire directement la table `platform_user_roles` côté client.
+      // Utiliser un RPC SECURITY DEFINER pour éviter les blocages RLS et stabiliser le chargement.
+      const { data: isSA, error: isSuperAdminError } = await withTimeout(
+        rpcWithRetry(() => supabase.rpc('is_super_admin'), {
+          maxRetries: 2,
+          baseDelayMs: 400,
+        }),
+        6000,
+        'is_super_admin'
+      );
 
       if (!mounted.current) return;
 
-      if (!platformError && platformRoles && platformRoles.length > 0) {
-        const isSA = platformRoles.some(r => r.role === 'super_admin');
-        setIsSuperAdmin(isSA);
-        
-        if (isSA) {
-          // Le Super Admin n'a pas besoin d'un rôle d'établissement
-          setUserRole('SuperAdmin');
-          setError(null);
-          return;
-        }
+      if (isSuperAdminError) {
+        console.error('Erreur is_super_admin:', isSuperAdminError);
+      }
+
+      const superAdmin = !!isSA;
+      setIsSuperAdmin(superAdmin);
+
+      if (superAdmin) {
+        setUserRole('SuperAdmin');
+        setError(null);
+        return;
       }
 
       // Sinon, récupérer le rôle d'établissement via RPC
-      const { data, error: rpcError } = await rpcWithRetry(
-        () => supabase.rpc('get_current_user_role'),
-        {
-          maxRetries: 3,
-          baseDelayMs: 500,
-          onRetry: (attempt, err) => {
-            console.warn(`Retry attempt ${attempt} for get_current_user_role:`, err.message);
+      const { data, error: rpcError } = await withTimeout(
+        rpcWithRetry(
+          () => supabase.rpc('get_current_user_role'),
+          {
+            maxRetries: 3,
+            baseDelayMs: 500,
+            onRetry: (attempt, err) => {
+              console.warn(`Retry attempt ${attempt} for get_current_user_role:`, err.message);
+            }
           }
-        }
+        ),
+        8000,
+        'get_current_user_role'
       );
 
       if (!mounted.current) return;
@@ -72,7 +95,11 @@ export const useCurrentUser = () => {
     // INITIAL load - contrôle isLoading
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await withTimeout(
+          supabase.auth.getSession(),
+          6000,
+          'getSession'
+        );
         
         if (!mounted.current) return;
         
@@ -89,12 +116,14 @@ export const useCurrentUser = () => {
         } else {
           setUserId(null);
           setUserRole(null);
+          setIsSuperAdmin(false);
         }
       } catch (err) {
         console.error('Erreur lors de la récupération de l\'utilisateur:', err);
         if (mounted.current) {
           setUserId(null);
           setUserRole(null);
+          setIsSuperAdmin(false);
           setError('Erreur de connexion');
         }
       } finally {
@@ -116,7 +145,7 @@ export const useCurrentUser = () => {
           // Déférer le fetch pour éviter les deadlocks Supabase
           setTimeout(async () => {
             if (mounted.current) {
-              // ATTENDRE que le rôle soit récupéré
+              // ATTENDRE que le rôle soit récupéré (avec timeout) pour éviter tout loading infini
               await fetchUserRole(session.user.id, mounted);
               // PUIS mettre loading à false
               if (mounted.current) setLoading(false);
@@ -125,6 +154,7 @@ export const useCurrentUser = () => {
         } else {
           setUserId(null);
           setUserRole(null);
+          setIsSuperAdmin(false);
           setLoading(false);
         }
       }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { Button } from '@/components/ui/button';
 import Sidebar from './components/Sidebar';
 import NotificationBell from './components/NotificationBell';
 import MobileHeader from './components/MobileHeader';
@@ -64,7 +65,7 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const location = useLocation();
-  const { userId, userRole, loading: authLoading } = useCurrentUser();
+  const { userId, userRole, loading: authLoading, error: authError } = useCurrentUser();
   
   // Initialize monitoring with user ID
   useEffect(() => {
@@ -169,6 +170,23 @@ const AppContent = () => {
       );
     }
 
+    if (authError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background p-6">
+          <div className="max-w-md w-full text-center space-y-3">
+            <h1 className="text-lg font-semibold">Impossible de charger la session</h1>
+            <p className="text-sm text-muted-foreground">{authError}</p>
+            <div className="flex items-center justify-center gap-2">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Réessayer
+              </Button>
+              <Button onClick={() => (window.location.href = '/auth')}>Se reconnecter</Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Ne pas rediriger si c'est une page légale
     if (userId && !isLegalPage) {
       // Super Admin va vers /blog-admin
@@ -209,6 +227,23 @@ const AppContent = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
           <p className="text-muted-foreground text-sm">Connexion en cours...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-6">
+        <div className="max-w-md w-full text-center space-y-3">
+          <h1 className="text-lg font-semibold">Session instable</h1>
+          <p className="text-sm text-muted-foreground">{authError}</p>
+          <div className="flex items-center justify-center gap-2">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Réessayer
+            </Button>
+            <Button onClick={() => (window.location.href = '/auth')}>Se reconnecter</Button>
+          </div>
         </div>
       </div>
     );
