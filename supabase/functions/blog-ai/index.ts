@@ -304,8 +304,14 @@ serve(async (req) => {
       );
     }
 
-    const { action, payload } = await req.json() as AIRequest;
+    const body = await req.json() as Record<string, unknown>;
+
+    const action = body.action as AIRequest['action'];
+    const payload = (body.payload ?? body.data ?? {}) as Record<string, unknown>;
+
     console.log(`Blog AI action: ${action}`);
+    console.log('Blog AI body keys:', Object.keys(body || {}));
+    console.log('Blog AI payload keys:', Object.keys(payload || {}));
 
     const systemPrompt = SYSTEM_PROMPTS[action];
     if (!systemPrompt) {
@@ -448,8 +454,11 @@ ${payload.content}
 Format souhaité: ${payload.format || 'Tous les formats'}`;
         break;
 
-      case 'generate-carousel':
-        userMessage = `Génère un carrousel de ${payload.slideCount || 5} slides pour les réseaux sociaux.
+      case 'generate-carousel': {
+        const slideCountRaw = (payload.slideCount ?? payload.slidesCount ?? payload.slide_count ?? payload.slides_count ?? 5) as unknown;
+        const slideCount = typeof slideCountRaw === 'number' ? slideCountRaw : Number(slideCountRaw) || 5;
+
+        userMessage = `Génère un carrousel de ${slideCount} slides pour les réseaux sociaux.
 
 Sujet/Thème: ${payload.topic || payload.title || 'Contenu professionnel'}
 Plateforme cible: ${payload.platform || 'LinkedIn'}
@@ -461,6 +470,7 @@ ${payload.content ? `Contenu de base:\n${payload.content}` : ''}
 
 Instructions supplémentaires: ${payload.instructions || 'Crée des slides percutantes avec des titres accrocheurs et du contenu concis'}`;
         break;
+      }
 
       default:
         userMessage = JSON.stringify(payload);
