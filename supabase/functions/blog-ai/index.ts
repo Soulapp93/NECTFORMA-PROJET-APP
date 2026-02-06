@@ -17,7 +17,8 @@ interface AIRequest {
     | 'generate-image-prompt'
     | 'translate'
     | 'summarize'
-    | 'generate-carousel';
+    | 'generate-carousel'
+    | 'generate-image';
   payload: Record<string, unknown>;
 }
 
@@ -312,6 +313,46 @@ serve(async (req) => {
     console.log(`Blog AI action: ${action}`);
     console.log('Blog AI body keys:', Object.keys(body || {}));
     console.log('Blog AI payload keys:', Object.keys(payload || {}));
+
+    // Handle image generation separately (uses image model)
+    if (action === 'generate-image') {
+      const prompt = (payload.prompt || payload.title || 'Professional blog image') as string;
+      const style = (payload.style || 'professional, modern, clean design') as string;
+      
+      console.log('Generating image with prompt:', prompt);
+      
+      const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image',
+          messages: [
+            { role: 'user', content: `Generate a blog cover image: ${prompt}. Style: ${style}. Ultra high resolution, 16:9 aspect ratio.` }
+          ],
+          modalities: ['image', 'text'],
+        }),
+      });
+
+      if (!imageResponse.ok) {
+        const errText = await imageResponse.text();
+        console.error('Image generation error:', imageResponse.status, errText);
+        return new Response(
+          JSON.stringify({ error: 'Erreur lors de la génération de l\'image' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const imageData = await imageResponse.json();
+      const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
+      return new Response(
+        JSON.stringify({ success: true, imageUrl: imageUrl || null }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const systemPrompt = SYSTEM_PROMPTS[action];
     if (!systemPrompt) {
