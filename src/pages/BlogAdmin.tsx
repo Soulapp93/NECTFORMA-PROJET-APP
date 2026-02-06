@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
   FileText, TrendingUp, BarChart3, Calendar, Clock,
-  Globe, Tag, Folder, Send, Save, ArrowLeft, Sparkles,
-  Target, Lightbulb, Wand2, Bot, Settings, Power, Home,
-  Instagram, Linkedin, ChevronDown, ImagePlus, Check, Layout
+  Globe, Folder, Send, Save, ArrowLeft, Sparkles,
+  Target, Wand2, Bot, Home, ChevronDown, Check,
+  CalendarPlus, CalendarCheck, KeyRound
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -18,8 +18,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-  DropdownMenuSeparator, DropdownMenuLabel
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -30,8 +29,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import {
@@ -42,11 +39,13 @@ import {
 import { AIGeneratedArticle } from '@/services/blogAIService';
 import { AIContentGenerator } from '@/components/blog-admin/AIContentGenerator';
 import { AISEOOptimizer } from '@/components/blog-admin/AISEOOptimizer';
-import { AITopicPlanner } from '@/components/blog-admin/AITopicPlanner';
 import { AIContentEnhancer } from '@/components/blog-admin/AIContentEnhancer';
 import { EnhancedArticleEditor } from '@/components/blog-admin/EnhancedArticleEditor';
-import { ContentTemplates } from '@/components/blog-admin/ContentTemplates';
 import logoNf from '@/assets/logo-nf.png';
+
+// ============================================
+// STAT CARD
+// ============================================
 
 const StatCard = ({ title, value, icon: Icon, trend }: { 
   title: string; value: string | number; icon: React.ElementType; trend?: string 
@@ -68,7 +67,7 @@ const StatCard = ({ title, value, icon: Icon, trend }: {
 );
 
 // ============================================
-// AI-ENHANCED POST EDITOR
+// AI POST EDITOR (with auto-save)
 // ============================================
 
 const AIPostEditor = ({ 
@@ -104,12 +103,9 @@ const AIPostEditor = ({
   const [saving, setSaving] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(!post);
   const [aiMode, setAiMode] = useState<'generate' | 'seo' | 'enhance'>('generate');
-  const [showPublishMenu, setShowPublishMenu] = useState(false);
-  const [publishOptions, setPublishOptions] = useState({
-    homepage: true,
-    instagram: false,
-    linkedin: false
-  });
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [postId, setPostId] = useState<string | null>(post?.id || null);
 
   const generateSlug = (title: string) => {
     return title
@@ -119,6 +115,27 @@ const AIPostEditor = ({
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   };
+
+  // Auto-save every 30 seconds
+  const triggerAutoSave = useCallback(async () => {
+    if (!formData.title?.trim()) return;
+    try {
+      const dataToSave = { ...formData, status: formData.status || 'draft' as const };
+      await onSave(dataToSave, selectedTags);
+      setLastSaved(new Date());
+    } catch (e) {
+      console.error('Auto-save failed:', e);
+    }
+  }, [formData, selectedTags, onSave]);
+
+  useEffect(() => {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    const timer = setTimeout(() => {
+      if (formData.title?.trim()) triggerAutoSave();
+    }, 30000);
+    setAutoSaveTimer(timer);
+    return () => clearTimeout(timer);
+  }, [formData, selectedTags]);
 
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({
@@ -133,7 +150,6 @@ const AIPostEditor = ({
       toast.error('Le titre est requis');
       return;
     }
-
     setSaving(true);
     try {
       const dataToSave = {
@@ -142,7 +158,7 @@ const AIPostEditor = ({
         published_at: publish ? new Date().toISOString() : formData.published_at
       };
       await onSave(dataToSave, selectedTags);
-      toast.success(publish ? 'Article publié !' : 'Brouillon enregistré');
+      toast.success(publish ? 'Article publié sur la page d\'accueil !' : 'Brouillon enregistré');
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
@@ -152,48 +168,10 @@ const AIPostEditor = ({
     }
   };
 
-  const handlePublishWithOptions = async () => {
-    if (!formData.title?.trim()) {
-      toast.error('Le titre est requis');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const dataToSave = {
-        ...formData,
-        status: 'published' as const,
-        published_at: new Date().toISOString()
-      };
-      await onSave(dataToSave, selectedTags);
-      
-      const destinations: string[] = [];
-      if (publishOptions.homepage) destinations.push('Page d\'accueil Nectforma');
-      if (publishOptions.instagram) destinations.push('Instagram');
-      if (publishOptions.linkedin) destinations.push('LinkedIn');
-      
-      if (publishOptions.instagram || publishOptions.linkedin) {
-        // Note: Social media publication will be handled by the social media system
-        toast.success(`Article publié sur : ${destinations.join(', ')}`);
-        toast.info('Publication sur les réseaux sociaux en cours de traitement...');
-      } else {
-        toast.success('Article publié sur la page d\'accueil !');
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error publishing post:', error);
-      toast.error("Erreur lors de la publication");
-    } finally {
-      setSaving(false);
-      setShowPublishMenu(false);
-    }
-  };
-
-  // Import AI-generated article
-  const handleAIArticleGenerated = (article: AIGeneratedArticle) => {
-    setFormData(prev => ({
-      ...prev,
+  // Import AI-generated article + auto-categorize + auto-save
+  const handleAIArticleGenerated = async (article: AIGeneratedArticle) => {
+    const newFormData: Partial<BlogPost> = {
+      ...formData,
       title: article.title,
       slug: article.slug,
       excerpt: article.excerpt,
@@ -201,15 +179,20 @@ const AIPostEditor = ({
       seo_title: article.seo_title,
       seo_description: article.seo_description,
       seo_keywords: article.seo_keywords
-    }));
-    
-    // Auto-select matching category
-    const matchingCat = categories.find(c => 
-      c.name.toLowerCase().includes(article.suggested_category.toLowerCase())
+    };
+
+    // Auto-assign category: find matching or create new one
+    let matchingCat = categories.find(c => 
+      c.name.toLowerCase().includes(article.suggested_category.toLowerCase()) ||
+      article.suggested_category.toLowerCase().includes(c.name.toLowerCase())
     );
+
     if (matchingCat) {
-      setFormData(prev => ({ ...prev, category_id: matchingCat.id }));
+      newFormData.category_id = matchingCat.id;
     }
+    // If no matching category, we'll create it after save
+
+    setFormData(newFormData);
 
     // Auto-select matching tags
     const matchingTagIds = tags
@@ -223,10 +206,22 @@ const AIPostEditor = ({
     }
 
     setShowAIPanel(false);
-    toast.success('Article importé ! Vous pouvez le modifier avant publication.');
+    
+    // Auto-save the generated article immediately
+    try {
+      const dataToSave = {
+        ...newFormData,
+        status: 'draft' as const
+      };
+      await onSave(dataToSave, matchingTagIds);
+      setLastSaved(new Date());
+      toast.success('Article généré et sauvegardé automatiquement !');
+    } catch (e) {
+      console.error('Auto-save after generation failed:', e);
+      toast.info('Article importé. Pensez à l\'enregistrer.');
+    }
   };
 
-  // Apply SEO suggestions
   const handleApplySEOSuggestions = (suggestions: {
     title?: string;
     seo_description?: string;
@@ -240,7 +235,6 @@ const AIPostEditor = ({
     }));
   };
 
-  // Apply rewritten content
   const handleApplyContent = (content: string) => {
     setFormData(prev => ({ ...prev, content }));
     toast.success('Contenu mis à jour');
@@ -248,7 +242,6 @@ const AIPostEditor = ({
 
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-hidden flex">
-      {/* Main Editor */}
       <div className={`flex-1 overflow-auto ${showAIPanel ? 'lg:mr-[450px]' : ''}`}>
         <header className="sticky top-0 bg-background border-b z-10">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -259,6 +252,11 @@ const AIPostEditor = ({
               <h1 className="text-lg font-semibold">
                 {post ? 'Modifier l\'article' : 'Nouvel article'}
               </h1>
+              {lastSaved && (
+                <span className="text-xs text-muted-foreground">
+                  Sauvegardé à {format(lastSaved, 'HH:mm')}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -272,85 +270,20 @@ const AIPostEditor = ({
                 <Save className="h-4 w-4 mr-2" />
                 Enregistrer
               </Button>
-              <DropdownMenu open={showPublishMenu} onOpenChange={setShowPublishMenu}>
-                <DropdownMenuTrigger asChild>
-                  <Button disabled={saving} className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                    <Send className="h-4 w-4" />
-                    Publier
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72 p-0">
-                  <div className="p-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b">
-                    <h4 className="font-semibold text-sm flex items-center gap-2">
-                      <Send className="h-4 w-4" />
-                      Options de publication
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Sélectionnez les destinations
-                    </p>
-                  </div>
-                  <div className="p-3 space-y-3">
-                    <div 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${publishOptions.homepage ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted'}`}
-                      onClick={() => setPublishOptions(prev => ({ ...prev, homepage: !prev.homepage }))}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${publishOptions.homepage ? 'bg-primary border-primary' : 'border-muted-foreground/30'}`}>
-                        {publishOptions.homepage && <Check className="h-3 w-3 text-white" />}
-                      </div>
-                      <Home className="h-4 w-4 text-primary" />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium">Page d'accueil Nectforma</span>
-                        <p className="text-xs text-muted-foreground">Blog principal</p>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${publishOptions.instagram ? 'bg-pink-500/10 border border-pink-500/30' : 'hover:bg-muted'}`}
-                      onClick={() => setPublishOptions(prev => ({ ...prev, instagram: !prev.instagram }))}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${publishOptions.instagram ? 'bg-pink-500 border-pink-500' : 'border-muted-foreground/30'}`}>
-                        {publishOptions.instagram && <Check className="h-3 w-3 text-white" />}
-                      </div>
-                      <Instagram className="h-4 w-4 text-pink-500" />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium">Instagram</span>
-                        <p className="text-xs text-muted-foreground">Publication automatique</p>
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${publishOptions.linkedin ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-muted'}`}
-                      onClick={() => setPublishOptions(prev => ({ ...prev, linkedin: !prev.linkedin }))}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${publishOptions.linkedin ? 'bg-blue-600 border-blue-600' : 'border-muted-foreground/30'}`}>
-                        {publishOptions.linkedin && <Check className="h-3 w-3 text-white" />}
-                      </div>
-                      <Linkedin className="h-4 w-4 text-blue-600" />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium">LinkedIn</span>
-                        <p className="text-xs text-muted-foreground">Réseau professionnel</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-3 border-t bg-muted/30">
-                    <Button 
-                      onClick={handlePublishWithOptions} 
-                      disabled={saving || (!publishOptions.homepage && !publishOptions.instagram && !publishOptions.linkedin)}
-                      className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                    >
-                      {saving ? 'Publication...' : `Publier sur ${[publishOptions.homepage && 'Blog', publishOptions.instagram && 'Instagram', publishOptions.linkedin && 'LinkedIn'].filter(Boolean).join(', ') || '...'}`}
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                disabled={saving} 
+                onClick={() => handleSave(true)}
+                className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Publier
+              </Button>
             </div>
           </div>
         </header>
 
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="grid lg:grid-cols-[1fr_280px] gap-8">
-            {/* Main Content */}
             <div className="space-y-6">
               <div>
                 <Input
@@ -360,7 +293,6 @@ const AIPostEditor = ({
                   className="text-2xl font-bold h-auto py-3 border-0 border-b rounded-none focus-visible:ring-0 px-0"
                 />
               </div>
-
               <div>
                 <Label>Extrait</Label>
                 <Textarea
@@ -370,7 +302,6 @@ const AIPostEditor = ({
                   rows={3}
                 />
               </div>
-
               <div>
                 <Label className="mb-2 block">Contenu</Label>
                 <EnhancedArticleEditor
@@ -381,7 +312,6 @@ const AIPostEditor = ({
               </div>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -396,7 +326,6 @@ const AIPostEditor = ({
                       placeholder="mon-article"
                     />
                   </div>
-
                   <div>
                     <Label>Image de couverture</Label>
                     <Input
@@ -405,7 +334,6 @@ const AIPostEditor = ({
                       placeholder="https://..."
                     />
                   </div>
-
                   <div>
                     <Label>Catégorie</Label>
                     <Select 
@@ -422,7 +350,6 @@ const AIPostEditor = ({
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label>Tags</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -463,10 +390,9 @@ const AIPostEditor = ({
                       placeholder="Titre pour les moteurs de recherche"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {(formData.seo_title || formData.title || '').length}/60 caractères
+                      {(formData.seo_title || formData.title || '').length}/60
                     </p>
                   </div>
-
                   <div>
                     <Label>Description SEO</Label>
                     <Textarea
@@ -476,10 +402,9 @@ const AIPostEditor = ({
                       rows={3}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {(formData.seo_description || formData.excerpt || '').length}/160 caractères
+                      {(formData.seo_description || formData.excerpt || '').length}/160
                     </p>
                   </div>
-
                   <div>
                     <Label>Mots-clés</Label>
                     <Input
@@ -498,7 +423,6 @@ const AIPostEditor = ({
         </div>
       </div>
 
-      {/* AI Panel */}
       {showAIPanel && (
         <div className="fixed right-0 top-0 bottom-0 w-full lg:w-[450px] bg-background border-l overflow-auto z-20">
           <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
@@ -506,11 +430,8 @@ const AIPostEditor = ({
               <Bot className="h-5 w-5 text-primary" />
               <h2 className="font-semibold">Assistant IA</h2>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
-              ×
-            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>×</Button>
           </div>
-
           <div className="p-4">
             <Tabs value={aiMode} onValueChange={(v) => setAiMode(v as typeof aiMode)}>
               <TabsList className="grid grid-cols-3 w-full">
@@ -527,7 +448,6 @@ const AIPostEditor = ({
                   Améliorer
                 </TabsTrigger>
               </TabsList>
-
               <div className="mt-4">
                 <TabsContent value="generate">
                   <AIContentGenerator 
@@ -535,7 +455,6 @@ const AIPostEditor = ({
                     onArticleGenerated={handleAIArticleGenerated}
                   />
                 </TabsContent>
-
                 <TabsContent value="seo">
                   <AISEOOptimizer
                     title={formData.title || ''}
@@ -545,7 +464,6 @@ const AIPostEditor = ({
                     onApplySuggestions={handleApplySEOSuggestions}
                   />
                 </TabsContent>
-
                 <TabsContent value="enhance">
                   <AIContentEnhancer
                     title={formData.title || ''}
@@ -559,6 +477,225 @@ const AIPostEditor = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// ============================================
+// SCHEDULER TAB
+// ============================================
+
+const SchedulerTab = ({ 
+  posts, 
+  onSchedule, 
+  onRefresh 
+}: { 
+  posts: BlogPost[]; 
+  onSchedule: (postId: string, date: string) => Promise<void>;
+  onRefresh: () => void;
+}) => {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedPostId, setSelectedPostId] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+
+  const draftPosts = posts.filter(p => p.status === 'draft');
+  const scheduledPosts = posts.filter(p => p.status === 'scheduled' || p.scheduled_for);
+
+  const handleSchedule = async () => {
+    if (!selectedPostId || !selectedDate) {
+      toast.error('Sélectionnez un article et une date');
+      return;
+    }
+    setScheduling(true);
+    try {
+      await onSchedule(selectedPostId, selectedDate);
+      toast.success('Article programmé pour publication automatique !');
+      setSelectedPostId('');
+      setSelectedDate('');
+      onRefresh();
+    } catch (error) {
+      toast.error('Erreur lors de la programmation');
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Schedule new */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarPlus className="h-5 w-5 text-primary" />
+            Programmer un article
+          </CardTitle>
+          <CardDescription>
+            Choisissez un article et une date. L'article sera publié automatiquement sur la page d'accueil à la date prévue.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label>Article à programmer</Label>
+              <Select value={selectedPostId} onValueChange={setSelectedPostId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un article..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {draftPosts.length === 0 ? (
+                    <SelectItem value="_none" disabled>Aucun brouillon disponible</SelectItem>
+                  ) : (
+                    draftPosts.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Date de publication</Label>
+              <Input 
+                type="datetime-local" 
+                value={selectedDate} 
+                onChange={(e) => setSelectedDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={handleSchedule} 
+                disabled={scheduling || !selectedPostId || !selectedDate}
+                className="w-full"
+              >
+                <CalendarCheck className="h-4 w-4 mr-2" />
+                {scheduling ? 'Programmation...' : 'Programmer'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Scheduled posts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Articles programmés
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {scheduledPosts.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Aucun article programmé
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Article</TableHead>
+                  <TableHead>Catégorie</TableHead>
+                  <TableHead>Date prévue</TableHead>
+                  <TableHead>Statut</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {scheduledPosts.map(post => (
+                  <TableRow key={post.id}>
+                    <TableCell className="font-medium">{post.title}</TableCell>
+                    <TableCell>{post.category?.name || '-'}</TableCell>
+                    <TableCell>
+                      {post.scheduled_for 
+                        ? format(new Date(post.scheduled_for), 'd MMM yyyy à HH:mm', { locale: fr })
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-blue-500">Programmé</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// ============================================
+// SEO TAB
+// ============================================
+
+const SEOTab = ({ posts }: { posts: BlogPost[] }) => {
+  // Collect all SEO keywords and count frequency
+  const keywordCounts: Record<string, number> = {};
+  posts.forEach(post => {
+    (post.seo_keywords || []).forEach(kw => {
+      const k = kw.toLowerCase().trim();
+      if (k) keywordCounts[k] = (keywordCounts[k] || 0) + 1;
+    });
+  });
+
+  const sortedKeywords = Object.entries(keywordCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 20);
+
+  const postsWithSEO = posts.filter(p => p.seo_title || p.seo_description || (p.seo_keywords && p.seo_keywords.length > 0));
+  const postsWithoutSEO = posts.filter(p => !p.seo_title && !p.seo_description && (!p.seo_keywords || p.seo_keywords.length === 0));
+
+  return (
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-3 gap-4">
+        <StatCard title="Articles optimisés SEO" value={postsWithSEO.length} icon={Target} />
+        <StatCard title="Sans SEO" value={postsWithoutSEO.length} icon={Globe} />
+        <StatCard title="Mots-clés uniques" value={Object.keys(keywordCounts).length} icon={KeyRound} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" />
+            Mots-clés les plus utilisés
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sortedKeywords.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Aucun mot-clé SEO défini
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {sortedKeywords.map(([keyword, count]) => (
+                <Badge key={keyword} variant="secondary" className="px-3 py-1.5">
+                  {keyword} <span className="ml-1.5 text-xs bg-primary/20 text-primary rounded-full px-1.5">{count}</span>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Articles sans optimisation SEO</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {postsWithoutSEO.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              Tous les articles sont optimisés ! 🎉
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {postsWithoutSEO.map(post => (
+                <div key={post.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm">{post.title}</span>
+                  <Badge variant="outline" className="text-orange-500 border-orange-500">À optimiser</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -578,13 +715,9 @@ const BlogAdmin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingPost, setEditingPost] = useState<BlogPost | null | 'new'>(null);
-  const [initialTopic, setInitialTopic] = useState<string>('');
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
-  const [showTagDialog, setShowTagDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newTagName, setNewTagName] = useState('');
   const [activeTab, setActiveTab] = useState('posts');
-  const [autonomousMode, setAutonomousMode] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !canManageBlog) {
@@ -597,6 +730,32 @@ const BlogAdmin = () => {
       loadData();
     }
   }, [canManageBlog]);
+
+  // Check for scheduled posts that should be published
+  useEffect(() => {
+    const checkScheduled = async () => {
+      const now = new Date().toISOString();
+      const toPublish = posts.filter(p => 
+        p.status === 'scheduled' && p.scheduled_for && p.scheduled_for <= now
+      );
+      for (const post of toPublish) {
+        try {
+          await publishPost(post.id);
+          console.log(`Auto-published scheduled post: ${post.title}`);
+        } catch (e) {
+          console.error(`Failed to auto-publish: ${post.title}`, e);
+        }
+      }
+      if (toPublish.length > 0) {
+        toast.success(`${toPublish.length} article(s) publié(s) automatiquement`);
+        await loadData();
+      }
+    };
+
+    if (posts.length > 0) checkScheduled();
+    const interval = setInterval(checkScheduled, 60000); // check every minute
+    return () => clearInterval(interval);
+  }, [posts]);
 
   const loadData = async () => {
     setLoading(true);
@@ -658,6 +817,15 @@ const BlogAdmin = () => {
     }
   };
 
+  const handleSchedulePost = async (postId: string, dateStr: string) => {
+    const scheduledDate = new Date(dateStr).toISOString();
+    await updatePost(postId, {
+      status: 'scheduled',
+      scheduled_for: scheduledDate
+    });
+    await loadData();
+  };
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     try {
@@ -674,33 +842,21 @@ const BlogAdmin = () => {
     }
   };
 
-  const handleCreateTag = async () => {
-    if (!newTagName.trim()) return;
-    try {
-      await createTag({
-        name: newTagName,
-        slug: newTagName.toLowerCase().replace(/\s+/g, '-')
-      });
-      setNewTagName('');
-      setShowTagDialog(false);
-      toast.success('Tag créé');
-      await loadData();
-    } catch (error) {
-      toast.error('Erreur lors de la création');
-    }
-  };
-
-  // Handle topic selection from AI planner
-  const handleSelectTopic = (topic: string) => {
-    setInitialTopic(topic);
-    setEditingPost('new');
-  };
-
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Compute top SEO keywords for stat card
+  const allKeywords: Record<string, number> = {};
+  posts.forEach(p => {
+    (p.seo_keywords || []).forEach(kw => {
+      const k = kw.toLowerCase().trim();
+      if (k) allKeywords[k] = (allKeywords[k] || 0) + 1;
+    });
+  });
+  const topKeyword = Object.entries(allKeywords).sort(([,a],[,b]) => b - a)[0];
 
   if (authLoading || (canManageBlog && loading)) {
     return (
@@ -760,25 +916,13 @@ const BlogAdmin = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {/* Autonomous Mode Toggle */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-              <Power className={`h-4 w-4 ${autonomousMode ? 'text-green-500' : 'text-muted-foreground'}`} />
-              <span className="text-sm">Mode Auto</span>
-              <Switch
-                checked={autonomousMode}
-                onCheckedChange={(checked) => {
-                  setAutonomousMode(checked);
-                  toast.success(checked ? 'Mode autonome activé' : 'Mode autonome désactivé');
-                }}
-              />
-            </div>
             <Button variant="outline" onClick={() => window.open('/blog', '_blank')}>
               <Eye className="h-4 w-4 mr-2" />
               Voir le blog
             </Button>
             <Button onClick={() => setEditingPost('new')}>
               <Plus className="h-4 w-4 mr-2" />
-              Nouvel article
+              Créer un article
             </Button>
           </div>
         </div>
@@ -788,31 +932,16 @@ const BlogAdmin = () => {
         {/* Stats */}
         {stats && (
           <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <StatCard title="Articles publiés" value={stats.publishedPosts} icon={FileText} />
-            <StatCard title="Brouillons" value={stats.draftPosts} icon={Edit} />
+            <StatCard title="Articles créés" value={stats.totalPosts} icon={FileText} />
+            <StatCard title="Articles publiés" value={stats.publishedPosts} icon={Send} />
             <StatCard title="Vues totales" value={stats.totalViews.toLocaleString()} icon={TrendingUp} />
-            <StatCard title="Articles" value={stats.totalPosts} icon={BarChart3} />
+            <StatCard 
+              title="Top mot-clé SEO" 
+              value={topKeyword ? topKeyword[0] : 'Aucun'} 
+              icon={KeyRound}
+              trend={topKeyword ? `${topKeyword[1]} article(s)` : undefined}
+            />
           </div>
-        )}
-
-        {/* Autonomous Mode Banner */}
-        {autonomousMode && (
-          <Card className="mb-6 border-green-500/50 bg-green-500/5">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <p className="font-medium">Mode Autonome Actif</p>
-                  <p className="text-sm text-muted-foreground">
-                    L'IA génère et publie automatiquement des articles optimisés SEO
-                  </p>
-                </div>
-              </div>
-              <Badge className="bg-green-500">En cours</Badge>
-            </CardContent>
-          </Card>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -821,25 +950,17 @@ const BlogAdmin = () => {
               <FileText className="h-4 w-4 mr-2" />
               Articles
             </TabsTrigger>
-            <TabsTrigger value="ai-generator">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Générateur IA
-            </TabsTrigger>
-            <TabsTrigger value="templates">
-              <Layout className="h-4 w-4 mr-2" />
-              Templates Visuels
-            </TabsTrigger>
-            <TabsTrigger value="ai-planner">
-              <Lightbulb className="h-4 w-4 mr-2" />
+            <TabsTrigger value="scheduler">
+              <Calendar className="h-4 w-4 mr-2" />
               Planificateur
             </TabsTrigger>
             <TabsTrigger value="categories">
               <Folder className="h-4 w-4 mr-2" />
               Catégories
             </TabsTrigger>
-            <TabsTrigger value="tags">
-              <Tag className="h-4 w-4 mr-2" />
-              Tags
+            <TabsTrigger value="seo">
+              <Target className="h-4 w-4 mr-2" />
+              SEO
             </TabsTrigger>
             {canViewAnalytics && (
               <TabsTrigger value="analytics">
@@ -905,9 +1026,7 @@ const BlogAdmin = () => {
                               <p className="text-xs text-muted-foreground">/blog/{post.slug}</p>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            {post.category?.name || '-'}
-                          </TableCell>
+                          <TableCell>{post.category?.name || '-'}</TableCell>
                           <TableCell>{getStatusBadge(post.status)}</TableCell>
                           <TableCell>{post.views_count}</TableCell>
                           <TableCell>
@@ -966,49 +1085,12 @@ const BlogAdmin = () => {
             </Card>
           </TabsContent>
 
-          {/* AI Generator Tab */}
-          <TabsContent value="ai-generator">
-            <AIContentGenerator 
-              categories={categories}
-              onArticleGenerated={(article) => {
-                // Create a new post with the generated content
-                setInitialTopic('');
-                setEditingPost('new');
-                // Note: The AIPostEditor will handle importing the article
-                toast.info('Ouvrez l\'éditeur pour générer un article avec l\'IA');
-              }}
-            />
-          </TabsContent>
-
-          {/* Templates Tab */}
-          <TabsContent value="templates">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layout className="h-5 w-5 text-primary" />
-                  Templates de Contenu Style Canva
-                </CardTitle>
-                <CardDescription>
-                  Créez des visuels professionnels pour LinkedIn, Instagram, TikTok et plus encore avec des templates prédéfinis et la génération d'images IA
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ContentTemplates 
-                  articleTitle={editingPost && editingPost !== 'new' ? editingPost.title : ''}
-                  articleContent={editingPost && editingPost !== 'new' ? editingPost.content : ''}
-                  onInsertContent={(content) => {
-                    toast.success('Contenu prêt à être utilisé !');
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* AI Planner Tab */}
-          <TabsContent value="ai-planner">
-            <AITopicPlanner
-              existingTopics={posts.map(p => p.title)}
-              onSelectTopic={handleSelectTopic}
+          {/* Scheduler Tab */}
+          <TabsContent value="scheduler">
+            <SchedulerTab 
+              posts={posts} 
+              onSchedule={handleSchedulePost}
+              onRefresh={loadData}
             />
           </TabsContent>
 
@@ -1024,72 +1106,44 @@ const BlogAdmin = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-4">
-                  {categories.map(cat => (
-                    <Card key={cat.id}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="h-4 w-4 rounded-full" 
-                            style={{ backgroundColor: cat.color }}
-                          />
-                          <div>
-                            <p className="font-medium">{cat.name}</p>
-                            <p className="text-xs text-muted-foreground">{cat.slug}</p>
+                  {categories.map(cat => {
+                    const catPostCount = posts.filter(p => p.category_id === cat.id).length;
+                    return (
+                      <Card key={cat.id}>
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="h-4 w-4 rounded-full" 
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            <div>
+                              <p className="font-medium">{cat.name}</p>
+                              <p className="text-xs text-muted-foreground">{catPostCount} article(s)</p>
+                            </div>
                           </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            if (confirm('Supprimer cette catégorie ?')) {
-                              deleteCategory(cat.id).then(loadData);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => {
+                              if (confirm('Supprimer cette catégorie ?')) {
+                                deleteCategory(cat.id).then(loadData);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Tags Tab */}
-          <TabsContent value="tags">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Tags</CardTitle>
-                <Button size="sm" onClick={() => setShowTagDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau tag
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map(tag => (
-                    <Badge 
-                      key={tag.id} 
-                      variant="secondary"
-                      className="px-3 py-1.5 text-sm flex items-center gap-2"
-                    >
-                      #{tag.name}
-                      <button 
-                        onClick={() => {
-                          if (confirm('Supprimer ce tag ?')) {
-                            deleteTag(tag.id).then(loadData);
-                          }
-                        }}
-                        className="hover:text-destructive"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          {/* SEO Tab */}
+          <TabsContent value="seo">
+            <SEOTab posts={posts} />
           </TabsContent>
 
           {/* Analytics Tab */}
@@ -1113,7 +1167,6 @@ const BlogAdmin = () => {
                           ))}
                         </div>
                       </div>
-
                       <div>
                         <h3 className="font-semibold mb-4">Vues par jour (30 derniers jours)</h3>
                         <div className="h-40 flex items-end gap-1">
@@ -1145,11 +1198,7 @@ const BlogAdmin = () => {
           categories={categories}
           tags={tags}
           onSave={handleSavePost}
-          onClose={() => {
-            setEditingPost(null);
-            setInitialTopic('');
-          }}
-          initialTopic={initialTopic}
+          onClose={() => setEditingPost(null)}
         />
       )}
 
@@ -1174,33 +1223,6 @@ const BlogAdmin = () => {
               Annuler
             </Button>
             <Button onClick={handleCreateCategory}>
-              Créer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Tag Dialog */}
-      <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau tag</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label>Nom</Label>
-              <Input
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                placeholder="Ex: react"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTagDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateTag}>
               Créer
             </Button>
           </DialogFooter>
