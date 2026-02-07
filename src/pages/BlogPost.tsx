@@ -283,46 +283,23 @@ const BlogPostPage = () => {
           <div className="min-w-0">
             <div className="bg-background rounded-2xl border-2 border-primary/30 shadow-lg shadow-primary/5 overflow-hidden">
               
-              {/* Header area inside frame */}
-              <div className="p-6 md:p-10 pb-0 md:pb-0">
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  {post.category && (
-                    <span className="text-xs font-bold uppercase tracking-widest text-primary">
-                      {post.category.name}
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight text-foreground">
-                  {post.title}
-                </h1>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-8">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="font-medium text-foreground">Équipe Nectforma</span>
-                  </div>
-                  {post.published_at && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {format(new Date(post.published_at), 'd MMMM yyyy', { locale: fr })}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {post.read_time_minutes} min
+              {/* Category label */}
+              {post.category && (
+                <div className="p-6 md:p-10 pb-0 md:pb-0">
+                  <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                    {post.category.name}
                   </span>
                 </div>
-              </div>
+              )}
 
-              {/* Branded Cover Image — Digiforma-style with title */}
-              <div className="px-6 md:px-10 mb-8">
+              {/* Branded Cover Image with title + metadata */}
+              <div className="px-6 md:px-10 pt-4 mb-8">
                 <ArticleCoverImage 
                   title={post.title} 
                   size="hero" 
-                  className="aspect-[16/7] rounded-xl shadow-md" 
+                  className="aspect-[16/7] rounded-xl shadow-md"
+                  publishedAt={post.published_at}
+                  readTime={post.read_time_minutes}
                 />
               </div>
 
