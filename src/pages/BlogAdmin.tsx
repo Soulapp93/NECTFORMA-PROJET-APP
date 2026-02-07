@@ -5,7 +5,8 @@ import {
   FileText, TrendingUp, BarChart3, Calendar, Clock,
   Globe, Folder, Send, Save, ArrowLeft, Sparkles,
   Target, Wand2, Bot, Home, ChevronDown, Check,
-  CalendarPlus, CalendarCheck, KeyRound, BookOpen, ArrowRight, Eye as EyeIcon
+  CalendarPlus, CalendarCheck, KeyRound, BookOpen, ArrowRight, Eye as EyeIcon,
+  Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -41,25 +42,27 @@ import { AIContentGenerator } from '@/components/blog-admin/AIContentGenerator';
 import { AISEOOptimizer } from '@/components/blog-admin/AISEOOptimizer';
 import { AIContentEnhancer } from '@/components/blog-admin/AIContentEnhancer';
 import { EnhancedArticleEditor } from '@/components/blog-admin/EnhancedArticleEditor';
+import { BlogCalendarView } from '@/components/blog-admin/BlogCalendarView';
+import { MonthlyArticleGenerator } from '@/components/blog-admin/MonthlyArticleGenerator';
 import logoNf from '@/assets/logo-nf.png';
 
 // ============================================
 // STAT CARD
 // ============================================
 
-const StatCard = ({ title, value, icon: Icon, trend }: { 
-  title: string; value: string | number; icon: React.ElementType; trend?: string 
+const StatCard = ({ title, value, icon: Icon, trend, accent }: { 
+  title: string; value: string | number; icon: React.ElementType; trend?: string; accent?: boolean;
 }) => (
-  <Card>
-    <CardContent className="p-6">
+  <Card className={accent ? 'border-primary/30 bg-primary/5' : ''}>
+    <CardContent className="p-5">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
-          {trend && <p className="text-xs text-green-500 mt-1">{trend}</p>}
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-2xl font-bold mt-1.5">{value}</p>
+          {trend && <p className="text-xs text-green-500 mt-1 font-medium">{trend}</p>}
         </div>
-        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Icon className="h-6 w-6 text-primary" />
+        <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${accent ? 'bg-primary text-primary-foreground' : 'bg-primary/10'}`}>
+          <Icon className={`h-5 w-5 ${accent ? '' : 'text-primary'}`} />
         </div>
       </div>
     </CardContent>
@@ -67,14 +70,12 @@ const StatCard = ({ title, value, icon: Icon, trend }: {
 );
 
 // ============================================
-// AI POST EDITOR (with auto-save)
+// ARTICLE PREVIEW
 // ============================================
 
-// Article Preview Component
 const ArticlePreviewPanel = ({ formData, category }: { formData: Partial<BlogPost>; category?: BlogCategory }) => (
   <div className="space-y-6 p-4">
     <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Aperçu page d'accueil</h3>
-    {/* Featured card preview */}
     <div className="bg-card rounded-2xl border-2 border-primary/20 overflow-hidden shadow-sm">
       <div className="flex flex-col">
         <div className="aspect-video overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
@@ -99,30 +100,12 @@ const ArticlePreviewPanel = ({ formData, category }: { formData: Partial<BlogPos
         </div>
       </div>
     </div>
-
-    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Aperçu article</h3>
-    {/* Article detail preview */}
-    <div className="bg-primary/5 rounded-2xl p-3">
-      <div className="bg-background rounded-xl border-2 border-primary/30 p-4 shadow-sm">
-        {category && <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{category.name}</span>}
-        <h4 className="font-bold text-sm mt-1 mb-2">{formData.title || 'Titre de l\'article'}</h4>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-3">
-          <span>Équipe Nectforma</span>
-          <span>•</span>
-          <span>{format(new Date(), 'd MMM yyyy', { locale: fr })}</span>
-        </div>
-        {formData.cover_image_url && (
-          <div className="rounded-lg overflow-hidden mb-3 border border-primary/10">
-            <img src={formData.cover_image_url} alt="" className="w-full h-24 object-cover" />
-          </div>
-        )}
-        <div className="text-[10px] text-muted-foreground line-clamp-4">
-          {formData.excerpt || 'Le contenu de votre article apparaîtra ici...'}
-        </div>
-      </div>
-    </div>
   </div>
 );
+
+// ============================================
+// AI POST EDITOR (with scheduling & auto-save)
+// ============================================
 
 const AIPostEditor = ({ 
   post, 
@@ -149,7 +132,8 @@ const AIPostEditor = ({
     seo_title: post?.seo_title || '',
     seo_description: post?.seo_description || '',
     seo_keywords: post?.seo_keywords || [],
-    status: post?.status || 'draft'
+    status: post?.status || 'draft',
+    scheduled_for: post?.scheduled_for || null
   });
   const [selectedTags, setSelectedTags] = useState<string[]>(
     post?.tags?.map(t => t.id) || []
@@ -161,6 +145,7 @@ const AIPostEditor = ({
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [postId, setPostId] = useState<string | null>(post?.id || null);
+  const [scheduleDate, setScheduleDate] = useState(post?.scheduled_for ? post.scheduled_for.slice(0, 16) : '');
 
   const generateSlug = (title: string) => {
     const base = title
@@ -204,7 +189,7 @@ const AIPostEditor = ({
     }));
   };
 
-  const handleSave = async (publish = false) => {
+  const handleSave = async (publish = false, schedule = false) => {
     if (!formData.title?.trim()) {
       toast.error('Le titre est requis');
       return;
@@ -212,16 +197,39 @@ const AIPostEditor = ({
     setSaving(true);
     try {
       const slug = postId ? formData.slug : generateSlug(formData.title || 'article');
+      
+      let status = formData.status;
+      let scheduled_for = formData.scheduled_for;
+      let published_at = formData.published_at;
+
+      if (schedule && scheduleDate) {
+        status = 'scheduled';
+        scheduled_for = new Date(scheduleDate).toISOString();
+      } else if (publish) {
+        status = 'published';
+        published_at = new Date().toISOString();
+        scheduled_for = null;
+      }
+
       const dataToSave = {
         ...formData,
         ...(postId ? { id: postId } : {}),
         slug,
-        status: publish ? 'published' as const : formData.status,
-        published_at: publish ? new Date().toISOString() : formData.published_at
+        status,
+        published_at,
+        scheduled_for
       };
+
       const savedId = await onSave(dataToSave, selectedTags);
       if (savedId && !postId) setPostId(savedId);
-      toast.success(publish ? 'Article publié sur la page d\'accueil !' : 'Brouillon enregistré');
+      
+      if (schedule) {
+        toast.success(`Article programmé pour le ${format(new Date(scheduleDate), 'd MMMM yyyy à HH:mm', { locale: fr })}`);
+      } else if (publish) {
+        toast.success('Article publié sur la page d\'accueil !');
+      } else {
+        toast.success('Brouillon enregistré');
+      }
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
@@ -244,40 +252,30 @@ const AIPostEditor = ({
       seo_keywords: article.seo_keywords
     };
 
-    // Auto-assign category: find matching or create new one
     let matchingCat = categories.find(c => 
       c.name.toLowerCase().includes(article.suggested_category.toLowerCase()) ||
       article.suggested_category.toLowerCase().includes(c.name.toLowerCase())
     );
-
     if (matchingCat) {
       newFormData.category_id = matchingCat.id;
     } else if (categories.length > 0) {
-      // Default to first category if no match
       newFormData.category_id = categories[0].id;
     }
 
     setFormData(newFormData);
 
-    // Auto-select matching tags
     const matchingTagIds = tags
       .filter(t => article.suggested_tags.some(st => 
         t.name.toLowerCase().includes(st.toLowerCase()) ||
         st.toLowerCase().includes(t.name.toLowerCase())
       ))
       .map(t => t.id);
-    if (matchingTagIds.length > 0) {
-      setSelectedTags(matchingTagIds);
-    }
+    if (matchingTagIds.length > 0) setSelectedTags(matchingTagIds);
 
     setShowAIPanel(false);
     
-    // Auto-save the generated article immediately
     try {
-      const dataToSave = {
-        ...newFormData,
-        status: 'draft' as const
-      };
+      const dataToSave = { ...newFormData, status: 'draft' as const };
       const savedId = await onSave(dataToSave, matchingTagIds);
       if (savedId) setPostId(savedId);
       setLastSaved(new Date());
@@ -289,9 +287,7 @@ const AIPostEditor = ({
   };
 
   const handleApplySEOSuggestions = (suggestions: {
-    title?: string;
-    seo_description?: string;
-    seo_keywords?: string[];
+    title?: string; seo_description?: string; seo_keywords?: string[];
   }) => {
     setFormData(prev => ({
       ...prev,
@@ -309,48 +305,71 @@ const AIPostEditor = ({
   return (
     <div className="fixed inset-0 bg-background z-50 overflow-hidden flex">
       <div className={`flex-1 overflow-auto ${showAIPanel ? 'lg:mr-[450px]' : showPreview ? 'lg:mr-[350px]' : ''}`}>
-        <header className="sticky top-0 bg-background border-b z-10">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <ArrowLeft className="h-5 w-5" />
+        <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b z-10">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-lg font-semibold">
-                {post ? 'Modifier l\'article' : 'Nouvel article'}
-              </h1>
-              {lastSaved && (
-                <span className="text-xs text-muted-foreground">
-                  Sauvegardé à {format(lastSaved, 'HH:mm')}
-                </span>
-              )}
+              <div>
+                <h1 className="text-base font-semibold">
+                  {post ? 'Modifier l\'article' : 'Nouvel article'}
+                </h1>
+                {lastSaved && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Sauvegardé à {format(lastSaved, 'HH:mm')}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button 
-                variant={showPreview ? 'secondary' : 'outline'}
+                variant={showPreview ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => { setShowPreview(!showPreview); if (!showPreview) setShowAIPanel(false); }}
               >
-                <EyeIcon className="h-4 w-4 mr-2" />
+                <EyeIcon className="h-4 w-4 mr-1.5" />
                 Aperçu
               </Button>
               <Button 
-                variant={showAIPanel ? 'secondary' : 'outline'}
+                variant={showAIPanel ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => { setShowAIPanel(!showAIPanel); if (!showAIPanel) setShowPreview(false); }}
               >
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 mr-1.5" />
                 IA
               </Button>
-              <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}>
+                <Save className="h-4 w-4 mr-1.5" />
                 Enregistrer
               </Button>
-              <Button 
-                disabled={saving} 
-                onClick={() => handleSave(true)}
-                className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Publier
-              </Button>
+              
+              {/* Schedule + Publish dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button disabled={saving} size="sm" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+                    <Send className="h-4 w-4 mr-1.5" />
+                    Publier
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => handleSave(true)}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Publier maintenant
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (!scheduleDate) {
+                      toast.error('Définissez une date de programmation dans les paramètres');
+                      return;
+                    }
+                    handleSave(false, true);
+                  }}>
+                    <CalendarCheck className="h-4 w-4 mr-2" />
+                    Programmer la publication
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
@@ -390,35 +409,66 @@ const AIPostEditor = ({
               </div>
             </div>
 
-            <div className="space-y-6">
+            {/* Sidebar params */}
+            <div className="space-y-5">
+              {/* Schedule Card */}
+              <Card className="border-2 border-blue-200 dark:border-blue-800">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CalendarPlus className="h-4 w-4 text-blue-500" />
+                    Programmation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Date et heure de publication</Label>
+                    <Input
+                      type="datetime-local"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="mt-1"
+                    />
+                  </div>
+                  {scheduleDate && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(scheduleDate), 'EEEE d MMMM yyyy à HH:mm', { locale: fr })}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm">Paramètres</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   <div>
-                    <Label>Slug URL</Label>
+                    <Label className="text-xs">Slug URL</Label>
                     <Input
                       value={formData.slug || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                       placeholder="mon-article"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label>Image de couverture</Label>
+                    <Label className="text-xs">Image de couverture</Label>
                     <Input
                       value={formData.cover_image_url || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, cover_image_url: e.target.value }))}
                       placeholder="https://..."
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label>Catégorie</Label>
+                    <Label className="text-xs">Catégorie</Label>
                     <Select 
                       value={formData.category_id || ''} 
                       onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -429,13 +479,13 @@ const AIPostEditor = ({
                     </Select>
                   </div>
                   <div>
-                    <Label>Tags</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <Label className="text-xs">Tags</Label>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {tags.map(tag => (
                         <Badge
                           key={tag.id}
                           variant={selectedTags.includes(tag.id) ? 'default' : 'outline'}
-                          className="cursor-pointer"
+                          className="cursor-pointer text-[10px]"
                           onClick={() => {
                             setSelectedTags(prev => 
                               prev.includes(tag.id) 
@@ -453,38 +503,40 @@ const AIPostEditor = ({
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Globe className="h-4 w-4" />
                     SEO
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   <div>
-                    <Label>Titre SEO</Label>
+                    <Label className="text-xs">Titre SEO</Label>
                     <Input
                       value={formData.seo_title || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
                       placeholder="Titre pour les moteurs de recherche"
+                      className="mt-1"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {(formData.seo_title || formData.title || '').length}/60
                     </p>
                   </div>
                   <div>
-                    <Label>Description SEO</Label>
+                    <Label className="text-xs">Description SEO</Label>
                     <Textarea
                       value={formData.seo_description || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
                       placeholder="Description pour les moteurs de recherche"
-                      rows={3}
+                      rows={2}
+                      className="mt-1"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {(formData.seo_description || formData.excerpt || '').length}/160
                     </p>
                   </div>
                   <div>
-                    <Label>Mots-clés</Label>
+                    <Label className="text-xs">Mots-clés</Label>
                     <Input
                       value={formData.seo_keywords?.join(', ') || ''}
                       onChange={(e) => setFormData(prev => ({ 
@@ -492,6 +544,7 @@ const AIPostEditor = ({
                         seo_keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
                       }))}
                       placeholder="mot1, mot2, mot3"
+                      className="mt-1"
                     />
                   </div>
                 </CardContent>
@@ -501,6 +554,7 @@ const AIPostEditor = ({
         </div>
       </div>
 
+      {/* AI Panel */}
       {showAIPanel && (
         <div className="fixed right-0 top-0 bottom-0 w-full lg:w-[450px] bg-background border-l overflow-auto z-20">
           <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
@@ -556,6 +610,7 @@ const AIPostEditor = ({
         </div>
       )}
 
+      {/* Preview Panel */}
       {showPreview && (
         <div className="fixed right-0 top-0 bottom-0 w-full lg:w-[350px] bg-background border-l overflow-auto z-20">
           <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
@@ -576,152 +631,10 @@ const AIPostEditor = ({
 };
 
 // ============================================
-// SCHEDULER TAB
-// ============================================
-
-const SchedulerTab = ({ 
-  posts, 
-  onSchedule, 
-  onRefresh 
-}: { 
-  posts: BlogPost[]; 
-  onSchedule: (postId: string, date: string) => Promise<void>;
-  onRefresh: () => void;
-}) => {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedPostId, setSelectedPostId] = useState('');
-  const [scheduling, setScheduling] = useState(false);
-
-  const draftPosts = posts.filter(p => p.status === 'draft');
-  const scheduledPosts = posts.filter(p => p.status === 'scheduled' || p.scheduled_for);
-
-  const handleSchedule = async () => {
-    if (!selectedPostId || !selectedDate) {
-      toast.error('Sélectionnez un article et une date');
-      return;
-    }
-    setScheduling(true);
-    try {
-      await onSchedule(selectedPostId, selectedDate);
-      toast.success('Article programmé pour publication automatique !');
-      setSelectedPostId('');
-      setSelectedDate('');
-      onRefresh();
-    } catch (error) {
-      toast.error('Erreur lors de la programmation');
-    } finally {
-      setScheduling(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Schedule new */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarPlus className="h-5 w-5 text-primary" />
-            Programmer un article
-          </CardTitle>
-          <CardDescription>
-            Choisissez un article et une date. L'article sera publié automatiquement sur la page d'accueil à la date prévue.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <Label>Article à programmer</Label>
-              <Select value={selectedPostId} onValueChange={setSelectedPostId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un article..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {draftPosts.length === 0 ? (
-                    <SelectItem value="_none" disabled>Aucun brouillon disponible</SelectItem>
-                  ) : (
-                    draftPosts.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Date de publication</Label>
-              <Input 
-                type="datetime-local" 
-                value={selectedDate} 
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={handleSchedule} 
-                disabled={scheduling || !selectedPostId || !selectedDate}
-                className="w-full"
-              >
-                <CalendarCheck className="h-4 w-4 mr-2" />
-                {scheduling ? 'Programmation...' : 'Programmer'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Scheduled posts */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Articles programmés
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {scheduledPosts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Aucun article programmé
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Article</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Date prévue</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {scheduledPosts.map(post => (
-                  <TableRow key={post.id}>
-                    <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell>{post.category?.name || '-'}</TableCell>
-                    <TableCell>
-                      {post.scheduled_for 
-                        ? format(new Date(post.scheduled_for), 'd MMM yyyy à HH:mm', { locale: fr })
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-blue-500">Programmé</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-// ============================================
 // SEO TAB
 // ============================================
 
 const SEOTab = ({ posts }: { posts: BlogPost[] }) => {
-  // Collect all SEO keywords and count frequency
   const keywordCounts: Record<string, number> = {};
   posts.forEach(post => {
     (post.seo_keywords || []).forEach(kw => {
@@ -754,9 +667,7 @@ const SEOTab = ({ posts }: { posts: BlogPost[] }) => {
         </CardHeader>
         <CardContent>
           {sortedKeywords.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Aucun mot-clé SEO défini
-            </p>
+            <p className="text-center text-muted-foreground py-8">Aucun mot-clé SEO défini</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {sortedKeywords.map(([keyword, count]) => (
@@ -775,9 +686,7 @@ const SEOTab = ({ posts }: { posts: BlogPost[] }) => {
         </CardHeader>
         <CardContent>
           {postsWithoutSEO.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              Tous les articles sont optimisés ! 🎉
-            </p>
+            <p className="text-center text-muted-foreground py-4">Tous les articles sont optimisés ! 🎉</p>
           ) : (
             <div className="space-y-2">
               {postsWithoutSEO.map(post => (
@@ -820,9 +729,7 @@ const BlogAdmin = () => {
   }, [authLoading, canManageBlog, navigate]);
 
   useEffect(() => {
-    if (canManageBlog) {
-      loadData();
-    }
+    if (canManageBlog) loadData();
   }, [canManageBlog]);
 
   // Check for scheduled posts that should be published
@@ -835,7 +742,6 @@ const BlogAdmin = () => {
       for (const post of toPublish) {
         try {
           await publishPost(post.id);
-          console.log(`Auto-published scheduled post: ${post.title}`);
         } catch (e) {
           console.error(`Failed to auto-publish: ${post.title}`, e);
         }
@@ -847,7 +753,7 @@ const BlogAdmin = () => {
     };
 
     if (posts.length > 0) checkScheduled();
-    const interval = setInterval(checkScheduled, 60000); // check every minute
+    const interval = setInterval(checkScheduled, 60000);
     return () => clearInterval(interval);
   }, [posts]);
 
@@ -855,10 +761,7 @@ const BlogAdmin = () => {
     setLoading(true);
     try {
       const [postsData, categoriesData, tagsData, statsData] = await Promise.all([
-        getAllPosts(),
-        getCategories(),
-        getTags(),
-        getBlogStats()
+        getAllPosts(), getCategories(), getTags(), getBlogStats()
       ]);
       setPosts(postsData);
       setCategories(categoriesData);
@@ -874,7 +777,6 @@ const BlogAdmin = () => {
 
   const handleSavePost = async (data: Partial<BlogPost>, tagIds: string[]): Promise<string | void> => {
     if (editingPost === 'new') {
-      // Check if we already have a postId from a previous save (auto-save)
       const existingId = data.id;
       if (existingId) {
         await updatePost(existingId, data);
@@ -883,9 +785,7 @@ const BlogAdmin = () => {
         return existingId;
       }
       const newPost = await createPost(data);
-      if (tagIds.length > 0) {
-        await setPostTags(newPost.id, tagIds);
-      }
+      if (tagIds.length > 0) await setPostTags(newPost.id, tagIds);
       await loadData();
       return newPost.id;
     } else if (editingPost) {
@@ -924,10 +824,7 @@ const BlogAdmin = () => {
 
   const handleSchedulePost = async (postId: string, dateStr: string) => {
     const scheduledDate = new Date(dateStr).toISOString();
-    await updatePost(postId, {
-      status: 'scheduled',
-      scheduled_for: scheduledDate
-    });
+    await updatePost(postId, { status: 'scheduled', scheduled_for: scheduledDate });
     await loadData();
   };
 
@@ -953,7 +850,6 @@ const BlogAdmin = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Compute top SEO keywords for stat card
   const allKeywords: Record<string, number> = {};
   posts.forEach(p => {
     (p.seo_keywords || []).forEach(kw => {
@@ -962,6 +858,8 @@ const BlogAdmin = () => {
     });
   });
   const topKeyword = Object.entries(allKeywords).sort(([,a],[,b]) => b - a)[0];
+
+  const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
 
   if (authLoading || (canManageBlog && loading)) {
     return (
@@ -994,82 +892,81 @@ const BlogAdmin = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'published':
-        return <Badge className="bg-green-500">Publié</Badge>;
-      case 'draft':
-        return <Badge variant="secondary">Brouillon</Badge>;
-      case 'scheduled':
-        return <Badge className="bg-blue-500">Programmé</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      case 'published': return <Badge className="bg-green-500 text-white">Publié</Badge>;
+      case 'draft': return <Badge variant="secondary">Brouillon</Badge>;
+      case 'scheduled': return <Badge className="bg-blue-500 text-white">Programmé</Badge>;
+      default: return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   return (
     <div className="min-h-screen bg-muted/20">
       {/* Header */}
-      <header className="bg-background border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logoNf} alt="Nectforma" className="h-8" />
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              Blog Admin
-              <Badge variant="outline" className="text-xs">
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI-Powered
-              </Badge>
-            </h1>
+      <header className="bg-background/95 backdrop-blur-sm border-b sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logoNf} alt="Nectforma" className="h-7" />
+            <div>
+              <h1 className="text-base font-bold flex items-center gap-2">
+                Blog Admin
+                <Badge variant="outline" className="text-[10px] h-5">
+                  <Sparkles className="h-3 w-3 mr-0.5" />
+                  IA
+                </Badge>
+              </h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => window.open('/blog', '_blank')}>
-              <Eye className="h-4 w-4 mr-2" />
-              Voir le blog
+            <Button variant="ghost" size="sm" onClick={() => window.open('/blog', '_blank')}>
+              <Eye className="h-4 w-4 mr-1.5" />
+              Blog
             </Button>
-            <Button onClick={() => setEditingPost('new')}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={() => setEditingPost('new')}>
+              <Plus className="h-4 w-4 mr-1.5" />
               Créer un article
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-6">
         {/* Stats */}
         {stats && (
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            <StatCard title="Articles créés" value={stats.totalPosts} icon={FileText} />
-            <StatCard title="Articles publiés" value={stats.publishedPosts} icon={Send} />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <StatCard title="Total articles" value={stats.totalPosts} icon={FileText} />
+            <StatCard title="Publiés" value={stats.publishedPosts} icon={Send} />
+            <StatCard title="Programmés" value={scheduledCount} icon={CalendarCheck} accent={scheduledCount > 0} />
             <StatCard title="Vues totales" value={stats.totalViews.toLocaleString()} icon={TrendingUp} />
             <StatCard 
-              title="Top mot-clé SEO" 
-              value={topKeyword ? topKeyword[0] : 'Aucun'} 
+              title="Top mot-clé" 
+              value={topKeyword ? topKeyword[0] : '—'} 
               icon={KeyRound}
               trend={topKeyword ? `${topKeyword[1]} article(s)` : undefined}
             />
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-background border flex-wrap h-auto p-1">
-            <TabsTrigger value="posts">
-              <FileText className="h-4 w-4 mr-2" />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="bg-background border h-auto p-1 flex-wrap">
+            <TabsTrigger value="posts" className="gap-1.5">
+              <FileText className="h-4 w-4" />
               Articles
             </TabsTrigger>
-            <TabsTrigger value="scheduler">
-              <Calendar className="h-4 w-4 mr-2" />
+            <TabsTrigger value="scheduler" className="gap-1.5">
+              <Calendar className="h-4 w-4" />
               Planificateur
             </TabsTrigger>
-            <TabsTrigger value="categories">
-              <Folder className="h-4 w-4 mr-2" />
+            <TabsTrigger value="categories" className="gap-1.5">
+              <Folder className="h-4 w-4" />
               Catégories
             </TabsTrigger>
-            <TabsTrigger value="seo">
-              <Target className="h-4 w-4 mr-2" />
+            <TabsTrigger value="seo" className="gap-1.5">
+              <Target className="h-4 w-4" />
               SEO
             </TabsTrigger>
             {canViewAnalytics && (
-              <TabsTrigger value="analytics">
-                <BarChart3 className="h-4 w-4 mr-2" />
+              <TabsTrigger value="analytics" className="gap-1.5">
+                <BarChart3 className="h-4 w-4" />
                 Analytics
               </TabsTrigger>
             )}
@@ -1078,8 +975,8 @@ const BlogAdmin = () => {
           {/* Posts Tab */}
           <TabsContent value="posts">
             <Card>
-              <CardHeader>
-                <div className="flex flex-col md:flex-row gap-4 justify-between">
+              <CardHeader className="pb-4">
+                <div className="flex flex-col md:flex-row gap-3 justify-between">
                   <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -1124,55 +1021,51 @@ const BlogAdmin = () => {
                       </TableRow>
                     ) : (
                       filteredPosts.map(post => (
-                        <TableRow key={post.id}>
+                        <TableRow key={post.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingPost(post)}>
                           <TableCell>
                             <div>
                               <p className="font-medium">{post.title}</p>
-                              <p className="text-xs text-muted-foreground">/blog/{post.slug}</p>
+                              <p className="text-[11px] text-muted-foreground">/blog/{post.slug}</p>
                             </div>
                           </TableCell>
-                          <TableCell>{post.category?.name || '-'}</TableCell>
+                          <TableCell className="text-sm">{post.category?.name || '—'}</TableCell>
                           <TableCell>{getStatusBadge(post.status)}</TableCell>
-                          <TableCell>{post.views_count}</TableCell>
+                          <TableCell className="text-sm">{post.views_count}</TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              {post.published_at 
-                                ? format(new Date(post.published_at), 'd MMM yyyy', { locale: fr })
-                                : format(new Date(post.created_at), 'd MMM yyyy', { locale: fr })
+                              {post.scheduled_for
+                                ? <span className="text-blue-600 dark:text-blue-400">{format(new Date(post.scheduled_for), 'd MMM yyyy HH:mm', { locale: fr })}</span>
+                                : post.published_at 
+                                  ? format(new Date(post.published_at), 'd MMM yyyy', { locale: fr })
+                                  : format(new Date(post.created_at), 'd MMM yyyy', { locale: fr })
                               }
                             </div>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingPost(post)}>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingPost(post); }}>
                                   <Edit className="h-4 w-4 mr-2" />
                                   Modifier
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.open(`/blog/${post.slug}`, '_blank')}>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`/blog/${post.slug}`, '_blank'); }}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   Voir
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleTogglePublish(post)}>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleTogglePublish(post); }}>
                                   {post.status === 'published' ? (
-                                    <>
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      Dépublier
-                                    </>
+                                    <><Clock className="h-4 w-4 mr-2" />Dépublier</>
                                   ) : (
-                                    <>
-                                      <Send className="h-4 w-4 mr-2" />
-                                      Publier
-                                    </>
+                                    <><Send className="h-4 w-4 mr-2" />Publier</>
                                   )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeletePost(post.id)}
+                                  onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
                                   className="text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
@@ -1190,13 +1083,19 @@ const BlogAdmin = () => {
             </Card>
           </TabsContent>
 
-          {/* Scheduler Tab */}
+          {/* Scheduler Tab — Calendar + Monthly Generator */}
           <TabsContent value="scheduler">
-            <SchedulerTab 
-              posts={posts} 
-              onSchedule={handleSchedulePost}
-              onRefresh={loadData}
-            />
+            <div className="space-y-6">
+              <MonthlyArticleGenerator 
+                categories={categories} 
+                onComplete={loadData} 
+              />
+              <BlogCalendarView
+                posts={posts}
+                onEditPost={(post) => setEditingPost(post)}
+                onSchedulePost={handleSchedulePost}
+              />
+            </div>
           </TabsContent>
 
           {/* Categories Tab */}
@@ -1217,10 +1116,7 @@ const BlogAdmin = () => {
                       <Card key={cat.id}>
                         <CardContent className="p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div 
-                              className="h-4 w-4 rounded-full" 
-                              style={{ backgroundColor: cat.color }}
-                            />
+                            <div className="h-4 w-4 rounded-full" style={{ backgroundColor: cat.color }} />
                             <div>
                               <p className="font-medium">{cat.name}</p>
                               <p className="text-xs text-muted-foreground">{catPostCount} article(s)</p>
@@ -1324,12 +1220,8 @@ const BlogAdmin = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateCategory}>
-              Créer
-            </Button>
+            <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>Annuler</Button>
+            <Button onClick={handleCreateCategory}>Créer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
