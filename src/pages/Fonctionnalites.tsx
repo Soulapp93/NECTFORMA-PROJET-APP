@@ -341,29 +341,41 @@ const Fonctionnalites = () => {
       </section>
 
       {/* Additional Features */}
-      <section className="py-20 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-gradient-to-b from-background via-muted/20 to-background relative overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Fonctionnalités Additionnelles</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Des outils supplémentaires pour optimiser votre productivité
+            <div className="inline-flex items-center px-5 py-2.5 bg-primary/10 rounded-full mb-6 backdrop-blur-sm border border-primary/20">
+              <Sparkles className="h-4 w-4 text-primary mr-2" />
+              <span className="text-primary font-semibold text-sm">Outils intégrés</span>
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-4">
+              Fonctionnalités <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Additionnelles</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Des outils supplémentaires pour optimiser votre productivité au quotidien
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {additionalFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div 
                   key={index}
-                  className="p-6 bg-card rounded-xl border border-border hover:border-primary transition-all flex items-start gap-4"
+                  className="group relative p-6 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1"
                 >
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-1">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary/15 to-accent/15 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:from-primary/25 group-hover:to-accent/25 transition-all duration-300">
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground mb-1.5 group-hover:text-primary transition-colors">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    </div>
                   </div>
                 </div>
               );
@@ -373,14 +385,19 @@ const Fonctionnalites = () => {
       </section>
 
       {/* Mobile App Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <Smartphone className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Accessible partout, à tout moment
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary/15 to-accent/15 rounded-3xl mb-6 border border-primary/20">
+              <Smartphone className="h-10 w-10 text-primary" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-4">
+              Accessible <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">partout</span>, à tout moment
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               NECTFORMA est optimisé pour tous vos appareils : ordinateur, tablette et smartphone.
               Gérez vos formations où que vous soyez.
             </p>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Menu, LayoutDashboard, ShieldCheck, Users, GraduationCap, BookText, CalendarDays, ClipboardCheck, Mail, UsersRound, Building2, UserCircle, Briefcase, Monitor } from 'lucide-react';
 import HeaderDropdown from './HeaderDropdown';
 import MobileDrawerNavigation from './MobileDrawerNavigation';
 
@@ -34,19 +34,19 @@ const LandingHeader: React.FC = () => {
               <HeaderDropdown
                 label="Fonctionnalités"
                 items={[
-                  { label: 'Tableau de bord', href: '/fonctionnalites#tableau-de-bord' },
-                  { label: 'Administration', href: '/fonctionnalites#administration' },
-                  { label: 'Gestion des utilisateurs', href: '/fonctionnalites#gestion-utilisateurs' },
-                  { label: 'Gestion des formations', href: '/fonctionnalites#gestion-formations' },
-                  { label: 'Cahiers de textes', href: '/fonctionnalites#cahiers-textes' },
-                  { label: 'Emplois du temps', href: '/fonctionnalites#emplois-du-temps' },
-                  { label: 'Émargement numérique', href: '/fonctionnalites#emargement' },
-                  { label: 'Messagerie interne', href: '/fonctionnalites#messagerie' },
-                  { label: 'Groupes de discussion', href: '/fonctionnalites#groupes' },
-                  { label: 'Gestion établissement', href: '/fonctionnalites#etablissement' },
-                  { label: 'Profils utilisateurs', href: '/fonctionnalites#profils' },
-                  { label: 'Espace tuteurs', href: '/fonctionnalites#tuteurs' },
-                  { label: 'Classes virtuelles', href: '/fonctionnalites#classes-virtuelles' },
+                  { label: 'Tableau de bord', href: '/fonctionnalites#tableau-de-bord', icon: LayoutDashboard },
+                  { label: 'Administration', href: '/fonctionnalites#administration', icon: ShieldCheck },
+                  { label: 'Gestion des utilisateurs', href: '/fonctionnalites#gestion-utilisateurs', icon: Users },
+                  { label: 'Gestion des formations', href: '/fonctionnalites#gestion-formations', icon: GraduationCap },
+                  { label: 'Cahiers de textes', href: '/fonctionnalites#cahiers-textes', icon: BookText },
+                  { label: 'Emplois du temps', href: '/fonctionnalites#emplois-du-temps', icon: CalendarDays },
+                  { label: 'Émargement numérique', href: '/fonctionnalites#emargement', icon: ClipboardCheck },
+                  { label: 'Messagerie interne', href: '/fonctionnalites#messagerie', icon: Mail },
+                  { label: 'Groupes de discussion', href: '/fonctionnalites#groupes', icon: UsersRound },
+                  { label: 'Gestion établissement', href: '/fonctionnalites#etablissement', icon: Building2 },
+                  { label: 'Profils utilisateurs', href: '/fonctionnalites#profils', icon: UserCircle },
+                  { label: 'Espace tuteurs', href: '/fonctionnalites#tuteurs', icon: Briefcase },
+                  { label: 'Classes virtuelles', href: '/fonctionnalites#classes-virtuelles', icon: Monitor },
                 ]}
               />
               <Link to="/pourquoi-nous" className="px-4 py-2 text-white/80 hover:text-white font-medium transition-all duration-200 rounded-lg hover:bg-white/10">
