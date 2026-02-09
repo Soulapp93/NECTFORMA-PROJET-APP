@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import LandingHeader from '@/components/landing/LandingHeader';
 import { 
   LayoutDashboard, ShieldCheck, Users, GraduationCap, BookText, CalendarDays, 
@@ -28,11 +28,23 @@ import profilImg from '@/assets/screenshots/profil.png';
 import espaceTuteursImg from '@/assets/screenshots/espace-tuteurs.png';
 
 const Fonctionnalites = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [location.hash]);
   const features = [
     {
+      id: 'tableau-de-bord',
       icon: LayoutDashboard,
       title: 'Tableau de Bord Intelligent',
-      description: 'Vue synthétique de votre établissement avec indicateurs clés en temps réel',
+      description: 'Vue synthétique de votre établissement avec indicateurs clés en temps réel. Suivez l\'activité de vos formations, la présence des étudiants et les événements à venir depuis un tableau de bord centralisé et personnalisable.',
       features: [
         'Statistiques de présence en temps réel',
         'Alertes sur cahiers de textes manquants',
@@ -44,9 +56,10 @@ const Fonctionnalites = () => {
       images: [tableauDeBordImg]
     },
     {
+      id: 'administration',
       icon: ShieldCheck,
       title: 'Administration Centralisée',
-      description: 'Centre de contrôle unifié avec onglets dédiés pour chaque module',
+      description: 'Centre de contrôle unifié avec onglets dédiés pour chaque module. Gérez l\'ensemble de votre établissement depuis une interface unique : utilisateurs, formations, emplois du temps, émargement et cahiers de textes.',
       features: [
         'Gestion utilisateurs avec import Excel',
         'Formations et modules personnalisés',
@@ -58,9 +71,10 @@ const Fonctionnalites = () => {
       images: [administrationImg]
     },
     {
+      id: 'gestion-utilisateurs',
       icon: Users,
       title: 'Gestion des Utilisateurs',
-      description: 'Gérez tous les profils de votre établissement avec des outils puissants',
+      description: 'Gérez tous les profils de votre établissement avec des outils puissants. Créez des comptes individuellement ou importez-les en masse via Excel, attribuez des rôles et suivez l\'état d\'activation de chaque utilisateur.',
       features: [
         'Création individuelle ou import Excel',
         'Rôles : AdminPrincipal, Admin, Formateur, Étudiant',
@@ -72,9 +86,10 @@ const Fonctionnalites = () => {
       images: [gestionUtilisateursImg]
     },
     {
+      id: 'gestion-formations',
       icon: GraduationCap,
       title: 'Gestion des Formations',
-      description: 'Créez des formations structurées avec modules, devoirs et documents',
+      description: 'Créez des formations structurées avec modules, devoirs et documents. Définissez les niveaux, assignez des formateurs, partagez du contenu pédagogique et suivez les soumissions des étudiants.',
       features: [
         'Structure modulaire flexible',
         'Niveaux : BAC+1 à BAC+5',
@@ -86,9 +101,10 @@ const Fonctionnalites = () => {
       images: [gestionFormations1Img, gestionFormations2Img]
     },
     {
+      id: 'cahiers-textes',
       icon: BookText,
       title: 'Cahiers de Textes',
-      description: 'Suivi pédagogique détaillé et complet de vos formations',
+      description: 'Suivi pédagogique détaillé et complet de vos formations. Chaque entrée est reliée à un créneau de l\'emploi du temps et permet de documenter le contenu du cours, les objectifs et le travail à faire.',
       features: [
         'Entrées liées aux créneaux EDT',
         'Matière, contenu, travail à faire',
@@ -100,9 +116,10 @@ const Fonctionnalites = () => {
       images: [cahiersTextesImg, cahierTexteDetailImg]
     },
     {
+      id: 'emplois-du-temps',
       icon: CalendarDays,
       title: 'Emplois du Temps',
-      description: 'Planning intelligent avec navigation par semaines',
+      description: 'Planning intelligent avec navigation par semaines. Créez et gérez les emplois du temps de vos formations avec des vues multiples et un système d\'import Excel pour une mise en place rapide.',
       features: [
         'Vues jour, semaine, mois, liste',
         'Modules, formateurs, salles',
@@ -114,9 +131,10 @@ const Fonctionnalites = () => {
       images: [emploisTempsImg, emploisTempsCalendrierImg]
     },
     {
+      id: 'emargement',
       icon: ClipboardCheck,
       title: 'Émargement Numérique',
-      description: 'Signatures numériques conformes et sécurisées',
+      description: 'Signatures numériques conformes et sécurisées. Générez automatiquement les feuilles de présence, permettez la signature via QR code ou écran tactile et exportez les feuilles en PDF.',
       features: [
         'QR Code dynamique par session',
         'Signature sur écran tactile',
@@ -128,9 +146,10 @@ const Fonctionnalites = () => {
       images: [emargement1Img, emargement2Img]
     },
     {
+      id: 'messagerie',
       icon: Mail,
       title: 'Messagerie Interne',
-      description: 'Communication professionnelle intégrée',
+      description: 'Communication professionnelle intégrée à l\'établissement. Envoyez des messages individuels ou groupés avec pièces jointes, organisez vos échanges et retrouvez facilement vos conversations.',
       features: [
         'Messages avec pièces jointes',
         'Envoi individuel ou groupé',
@@ -142,9 +161,10 @@ const Fonctionnalites = () => {
       images: [messagerie1Img, messagerie2Img]
     },
     {
+      id: 'groupes',
       icon: UsersRound,
       title: 'Groupes de Discussion',
-      description: 'Collaboration en temps réel avec votre établissement',
+      description: 'Collaboration en temps réel avec votre établissement. Des groupes sont automatiquement créés par formation pour favoriser les échanges entre étudiants et formateurs.',
       features: [
         'Groupes automatiques par formation',
         'Chat temps réel',
@@ -156,9 +176,10 @@ const Fonctionnalites = () => {
       images: [groupesImg]
     },
     {
+      id: 'etablissement',
       icon: Building2,
       title: 'Gestion Établissement',
-      description: 'Configuration et personnalisation de votre établissement',
+      description: 'Configuration et personnalisation complète de votre établissement. Renseignez vos informations légales, ajoutez votre logo et paramétrez les notifications pour tous vos utilisateurs.',
       features: [
         'Logo et identité visuelle',
         'Informations légales (SIRET)',
@@ -170,9 +191,10 @@ const Fonctionnalites = () => {
       images: [gestionEtablissementImg]
     },
     {
+      id: 'profils',
       icon: UserCircle,
       title: 'Profils Utilisateurs',
-      description: 'Espace personnel pour chaque utilisateur',
+      description: 'Espace personnel pour chaque utilisateur. Gérez votre photo de profil, enregistrez votre signature électronique, configurez vos préférences de notifications et scannez les QR codes d\'émargement.',
       features: [
         'Photo de profil',
         'Signature électronique enregistrée',
@@ -184,9 +206,10 @@ const Fonctionnalites = () => {
       images: [profilImg]
     },
     {
+      id: 'tuteurs',
       icon: Briefcase,
       title: 'Espace Tuteurs Entreprises',
-      description: 'Suivi dédié pour les tuteurs d\'alternants',
+      description: 'Suivi dédié pour les tuteurs d\'alternants. Consultez le planning et les présences de vos apprentis, communiquez avec l\'établissement et recevez des notifications en cas d\'absence.',
       features: [
         'Planning de l\'alternant',
         'Consultation des présences',
@@ -198,9 +221,10 @@ const Fonctionnalites = () => {
       images: [espaceTuteursImg]
     },
     {
+      id: 'classes-virtuelles',
       icon: Monitor,
       title: 'Classes Virtuelles',
-      description: 'Sessions de formation en ligne avec visioconférence intégrée',
+      description: 'Sessions de formation en ligne avec visioconférence intégrée. Organisez des cours à distance en HD avec partage d\'écran, enregistrement et chat en direct.',
       features: [
         'Visioconférence HD',
         'Partage d\'écran',
@@ -247,7 +271,7 @@ const Fonctionnalites = () => {
       {/* Features - Staggered layout with screenshots */}
       <section className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-24">
+          <div className="space-y-32">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               const isEven = index % 2 === 0;
@@ -257,68 +281,74 @@ const Fonctionnalites = () => {
               return (
                 <div 
                   key={index}
-                  className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-12 items-center`}
+                  id={feature.id}
+                  className="scroll-mt-24"
                 >
-                  {/* Content */}
-                  <div className="flex-1 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-                        <Icon className="h-8 w-8 text-primary-foreground" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
-                          Module {index + 1}
-                        </span>
-                        {isComingSoon && (
-                          <span className="text-sm font-medium text-accent bg-accent/10 px-3 py-1 rounded-full">
-                            À venir
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <h2 className="text-3xl font-bold text-foreground">{feature.title}</h2>
-                    <p className="text-lg text-muted-foreground leading-relaxed">{feature.description}</p>
-                    
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {feature.features.map((feat, featIndex) => (
-                        <li key={featIndex} className="flex items-start">
-                          <CheckCircle2 className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                          <span className="text-muted-foreground">{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Screenshot */}
-                  <div className="flex-1 w-full">
-                    {hasImages ? (
-                      <div className={`space-y-4 ${feature.images.length > 1 ? 'grid grid-cols-1 gap-4' : ''}`}>
-                        {feature.images.map((img, imgIndex) => (
-                          <div 
-                            key={imgIndex}
-                            className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-card"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent pointer-events-none z-10"></div>
-                            <img 
-                              src={img} 
-                              alt={`${feature.title} - Capture ${imgIndex + 1}`}
-                              className="w-full h-auto object-cover"
-                              loading="lazy"
-                            />
+                  <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-12 lg:gap-16 items-center`}>
+                    {/* Content Card */}
+                    <div className="flex-1">
+                      <div className="bg-card rounded-2xl border border-border p-8 shadow-lg hover:shadow-xl transition-shadow">
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
+                            <Icon className="h-7 w-7 text-primary-foreground" />
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-gradient-to-br from-muted to-muted/50 aspect-video flex items-center justify-center">
-                        <div className="text-center p-8">
-                          <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <Icon className="h-10 w-10 text-primary" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                              Module {index + 1}
+                            </span>
+                            {isComingSoon && (
+                              <span className="text-xs font-semibold text-accent bg-accent/10 px-3 py-1 rounded-full">
+                                À venir
+                              </span>
+                            )}
                           </div>
-                          <p className="text-muted-foreground font-medium">Capture d'écran à venir</p>
+                        </div>
+                        
+                        <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">{feature.title}</h2>
+                        <p className="text-muted-foreground leading-relaxed mb-6">{feature.description}</p>
+                        
+                        <div className="bg-muted/50 rounded-xl p-5 border border-border/50">
+                          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {feature.features.map((feat, featIndex) => (
+                              <li key={featIndex} className="flex items-start gap-2.5">
+                                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                <span className="text-sm text-foreground/80">{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Screenshot */}
+                    <div className="flex-1 w-full">
+                      {hasImages ? (
+                        <div className={`${feature.images.length > 1 ? 'space-y-4' : ''}`}>
+                          {feature.images.map((img, imgIndex) => (
+                            <div 
+                              key={imgIndex}
+                              className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-card"
+                            >
+                              <img 
+                                src={img} 
+                                alt={`${feature.title} - Capture ${imgIndex + 1}`}
+                                className="w-full h-auto object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-gradient-to-br from-muted to-muted/50 aspect-video flex items-center justify-center">
+                          <div className="text-center p-8">
+                            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                              <Icon className="h-10 w-10 text-primary" />
+                            </div>
+                            <p className="text-muted-foreground font-medium">Capture d'écran à venir</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

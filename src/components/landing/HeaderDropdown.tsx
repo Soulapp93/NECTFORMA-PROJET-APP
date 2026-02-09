@@ -64,21 +64,28 @@ const HeaderDropdown: React.FC<HeaderDropdownProps> = ({ label, items }) => {
                       const el = document.querySelector(item.href);
                       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    className="block px-4 py-3 text-sm text-popover-foreground hover:bg-primary/5 hover:text-primary transition-colors font-medium"
+                    className="block px-4 py-2.5 text-sm text-popover-foreground hover:bg-primary/5 hover:text-primary transition-colors font-medium"
                   >
                     {item.label}
                   </a>
                 ) : (
                   <Link
                     to={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className="block px-4 py-3 text-sm text-popover-foreground hover:bg-primary/5 hover:text-primary transition-colors font-medium"
+                    onClick={() => {
+                      setIsOpen(false);
+                      // If the href contains a hash, scroll to it after navigation
+                      if (item.href.includes('#')) {
+                        setTimeout(() => {
+                          const hash = item.href.split('#')[1];
+                          const el = document.getElementById(hash);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 300);
+                      }
+                    }}
+                    className="block px-4 py-2.5 text-sm text-popover-foreground hover:bg-primary/5 hover:text-primary transition-colors font-medium"
                   >
                     {item.label}
                   </Link>
-                )}
-                {index < items.length - 1 && (
-                  <div className="mx-3 border-b border-border/50" />
                 )}
               </React.Fragment>
             ))}
