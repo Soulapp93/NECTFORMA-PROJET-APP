@@ -316,32 +316,18 @@ const Fonctionnalites = () => {
                       </div>
                     </div>
 
-                    {/* Screenshot */}
-                    <div className="flex-1 w-full">
+                    {/* Illustration */}
+                    <div className="flex-1 w-full flex items-center justify-center">
                       {hasImages ? (
-                        <div className={`${feature.images.length > 1 ? 'space-y-4' : ''}`}>
-                          {feature.images.map((img, imgIndex) => (
-                            <div 
-                              key={imgIndex}
-                              className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-card"
-                            >
-                              <img 
-                                src={img} 
-                                alt={`${feature.title} - Capture ${imgIndex + 1}`}
-                                className="w-full h-auto object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                          ))}
-                        </div>
+                        <img 
+                          src={feature.images[0]} 
+                          alt={feature.title}
+                          className="w-full max-w-md h-auto object-contain drop-shadow-lg"
+                          loading="lazy"
+                        />
                       ) : (
-                        <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border bg-gradient-to-br from-muted to-muted/50 aspect-video flex items-center justify-center">
-                          <div className="text-center p-8">
-                            <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                              <Icon className="h-10 w-10 text-primary" />
-                            </div>
-                            <p className="text-muted-foreground font-medium">Capture d'écran à venir</p>
-                          </div>
+                        <div className="w-full max-w-md aspect-square flex items-center justify-center">
+                          <Icon className="h-24 w-24 text-primary/30" />
                         </div>
                       )}
                     </div>
