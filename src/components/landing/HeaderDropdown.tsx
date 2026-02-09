@@ -49,14 +49,21 @@ const HeaderDropdown: React.FC<HeaderDropdownProps> = ({ label, items }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in">
+        <div className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="py-1">
             {items.map((item, index) => (
               <React.Fragment key={item.label}>
                 {item.isAnchor ? (
                   <a
                     href={item.href}
-                    onClick={() => setIsOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsOpen(false);
+                      const el = document.querySelector(item.href);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
                     className="block px-4 py-3 text-sm text-popover-foreground hover:bg-primary/5 hover:text-primary transition-colors font-medium"
                   >
                     {item.label}
