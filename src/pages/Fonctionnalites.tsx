@@ -280,54 +280,50 @@ const Fonctionnalites = () => {
                   id={feature.id}
                   className="scroll-mt-24"
                 >
-                  <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-12 lg:gap-16 items-center`}>
-                    {/* Content Card */}
-                    <div className="flex-1">
-                      <div className="bg-card rounded-2xl border border-border p-8 shadow-lg hover:shadow-xl transition-shadow">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-                            <Icon className="h-7 w-7 text-primary-foreground" />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
-                              Module {index + 1}
-                            </span>
-                            {isComingSoon && (
-                              <span className="text-xs font-semibold text-accent bg-accent/10 px-3 py-1 rounded-full">
-                                À venir
-                              </span>
-                            )}
-                          </div>
+                  <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 lg:gap-12 items-center`}>
+                    {/* Content */}
+                    <div className="flex-1 space-y-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-md">
+                          <Icon className="h-6 w-6 text-primary-foreground" />
                         </div>
-                        
-                        <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">{feature.title}</h2>
-                        <p className="text-muted-foreground leading-relaxed mb-6">{feature.description}</p>
-                        
-                        <div className="bg-muted/50 rounded-xl p-5 border border-border/50">
-                          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {feature.features.map((feat, featIndex) => (
-                              <li key={featIndex} className="flex items-start gap-2.5">
-                                <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                <span className="text-sm text-foreground/80">{feat}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full tracking-wide uppercase">
+                          Module {index + 1}
+                        </span>
+                        {isComingSoon && (
+                          <span className="text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-full">
+                            À venir
+                          </span>
+                        )}
+                      </div>
+                      
+                      <h2 className="text-2xl lg:text-3xl font-bold text-foreground">{feature.title}</h2>
+                      <p className="text-muted-foreground leading-relaxed text-[15px]">{feature.description}</p>
+                      
+                      <div className="bg-card/80 backdrop-blur-sm rounded-xl p-5 shadow-sm border border-border/30">
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {feature.features.map((feat, featIndex) => (
+                            <li key={featIndex} className="flex items-start gap-2.5">
+                              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-foreground/80">{feat}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
 
-                    {/* Illustration */}
-                    <div className="flex-1 w-full flex items-center justify-center">
+                    {/* Illustration - no frame, floats directly */}
+                    <div className="flex-1 w-full flex items-center justify-center relative">
                       {hasImages ? (
                         <img 
                           src={feature.images[0]} 
                           alt={feature.title}
-                          className="w-full max-w-md h-auto object-contain drop-shadow-lg"
+                          className="w-full max-w-lg h-auto object-contain drop-shadow-xl"
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full max-w-md aspect-square flex items-center justify-center">
-                          <Icon className="h-24 w-24 text-primary/30" />
+                        <div className="w-full max-w-lg aspect-[4/3] flex items-center justify-center">
+                          <Icon className="h-24 w-24 text-primary/20" />
                         </div>
                       )}
                     </div>
