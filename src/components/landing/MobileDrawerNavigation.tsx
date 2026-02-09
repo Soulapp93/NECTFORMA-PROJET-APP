@@ -26,25 +26,15 @@ const MobileDrawerNavigation: React.FC<MobileDrawerNavigationProps> = ({ isOpen,
 
   const menuItems: MenuItem[] = [
     {
-      label: 'Solution',
+      label: 'Fonctionnalités',
       subItems: [
-        { label: 'Tableau de bord', href: '#fonctionnalites', isAnchor: true },
+        { label: 'Tableau de bord', href: '/fonctionnalites', isAnchor: false },
+        { label: 'Administration', href: '/fonctionnalites', isAnchor: false },
         { label: 'Gestion des formations', href: '/fonctionnalites', isAnchor: false },
         { label: 'Emplois du temps', href: '/fonctionnalites', isAnchor: false },
         { label: 'Émargement digital', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Messagerie interne', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Classes virtuelles', href: '/fonctionnalites', isAnchor: false },
-      ],
-    },
-    {
-      label: 'Fonctionnalités',
-      subItems: [
-        { label: 'Administration', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Gestion des utilisateurs', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Cahiers de texte', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Groupes & Chat', href: '/fonctionnalites', isAnchor: false },
+        { label: 'Messagerie & Chat', href: '/fonctionnalites', isAnchor: false },
         { label: 'Espace tuteurs', href: '/fonctionnalites', isAnchor: false },
-        { label: 'Gestion des profils', href: '/fonctionnalites', isAnchor: false },
       ],
     },
     {

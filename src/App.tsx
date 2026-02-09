@@ -203,7 +203,7 @@ const AppContent = () => {
 
   // Pages publiques (sans authentification)
   // IMPORTANT: /blog-admin est volontairement EXCLU (guard dédié ci-dessus)
-  const publicPages = ['/', '/solutions', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite', '/documentation', '/blog'];
+  const publicPages = ['/', '/fonctionnalites', '/pourquoi-nous', '/cgu', '/politique-confidentialite', '/documentation', '/blog'];
   // Pages légales accessibles même connecté (CGU, Politique de Confidentialité)
   const legalPages = ['/cgu', '/politique-confidentialite'];
    const isPublicPage = publicPages.includes(location.pathname) || location.pathname.startsWith('/blog/');
@@ -258,7 +258,7 @@ const AppContent = () => {
         <GoogleAnalytics measurementId={import.meta.env.VITE_GA_MEASUREMENT_ID || ''} />
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/solutions" element={<Solutions />} />
+          <Route path="/solutions" element={<Navigate to="/fonctionnalites" replace />} />
           <Route path="/fonctionnalites" element={<Fonctionnalites />} />
           <Route path="/pourquoi-nous" element={<PourquoiNous />} />
           <Route path="/cgu" element={<CGU />} />

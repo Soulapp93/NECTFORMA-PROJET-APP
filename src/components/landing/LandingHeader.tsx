@@ -32,23 +32,14 @@ const LandingHeader: React.FC = () => {
 
             <nav className="hidden lg:flex items-center space-x-1">
               <HeaderDropdown
-                label="Solution"
+                label="Fonctionnalités"
                 items={[
-                  { label: 'Tableau de bord', href: '/solutions' },
+                  { label: 'Tableau de bord', href: '/fonctionnalites' },
+                  { label: 'Administration', href: '/fonctionnalites' },
                   { label: 'Gestion des formations', href: '/fonctionnalites' },
                   { label: 'Emplois du temps', href: '/fonctionnalites' },
                   { label: 'Émargement digital', href: '/fonctionnalites' },
-                  { label: 'Classes virtuelles', href: '/fonctionnalites' },
-                ]}
-              />
-              <HeaderDropdown
-                label="Fonctionnalités"
-                items={[
-                  { label: 'Administration', href: '/fonctionnalites' },
-                  { label: 'Gestion des utilisateurs', href: '/fonctionnalites' },
-                  { label: 'Cahiers de texte', href: '/fonctionnalites' },
-                  { label: 'Messagerie interne', href: '/fonctionnalites' },
-                  { label: 'Groupes & Chat', href: '/fonctionnalites' },
+                  { label: 'Messagerie & Chat', href: '/fonctionnalites' },
                   { label: 'Espace tuteurs', href: '/fonctionnalites' },
                 ]}
               />
