@@ -8,24 +8,20 @@ import {
   Upload, Bell, Search, Monitor
 } from 'lucide-react';
 
-// Imports des captures d'écran
-import tableauDeBordImg from '@/assets/screenshots/tableau-de-bord.png';
-import administrationImg from '@/assets/screenshots/administration.png';
-import gestionUtilisateursImg from '@/assets/screenshots/gestion-utilisateurs.png';
-import gestionFormations1Img from '@/assets/screenshots/gestion-formations-1.png';
-import gestionFormations2Img from '@/assets/screenshots/gestion-formations-2.png';
-import cahiersTextesImg from '@/assets/screenshots/cahiers-textes.png';
-import emploisTempsImg from '@/assets/screenshots/emplois-temps.png';
-import emploisTempsCalendrierImg from '@/assets/screenshots/emplois-temps-calendrier.png';
-import cahierTexteDetailImg from '@/assets/screenshots/cahier-texte-detail.png';
-import emargement1Img from '@/assets/screenshots/emargement-1.png';
-import emargement2Img from '@/assets/screenshots/emargement-2.png';
-import messagerie1Img from '@/assets/screenshots/messagerie-1.png';
-import messagerie2Img from '@/assets/screenshots/messagerie-2.png';
-import groupesImg from '@/assets/screenshots/groupes.png';
-import gestionEtablissementImg from '@/assets/screenshots/gestion-etablissement.png';
-import profilImg from '@/assets/screenshots/profil.png';
-import espaceTuteursImg from '@/assets/screenshots/espace-tuteurs.png';
+// Imports des illustrations
+import tableauDeBordIllust from '@/assets/illustrations/tableau-de-bord.png';
+import administrationIllust from '@/assets/illustrations/administration.png';
+import gestionUtilisateursIllust from '@/assets/illustrations/gestion-utilisateurs.png';
+import gestionFormationsIllust from '@/assets/illustrations/gestion-formations.png';
+import cahiersTextesIllust from '@/assets/illustrations/cahiers-textes.png';
+import emploisTempsIllust from '@/assets/illustrations/emplois-temps.png';
+import emargementIllust from '@/assets/illustrations/emargement.png';
+import messagerieIllust from '@/assets/illustrations/messagerie.png';
+import groupesIllust from '@/assets/illustrations/groupes.png';
+import gestionEtablissementIllust from '@/assets/illustrations/gestion-etablissement.png';
+import profilsIllust from '@/assets/illustrations/profils.png';
+import espaceTuteursIllust from '@/assets/illustrations/espace-tuteurs.png';
+import classesVirtuellesIllust from '@/assets/illustrations/classes-virtuelles.png';
 
 const Fonctionnalites = () => {
   const location = useLocation();
@@ -53,7 +49,7 @@ const Fonctionnalites = () => {
         'Top étudiants assidus et à risque',
         'Heures de cours par semaine, mois, année'
       ],
-      images: [tableauDeBordImg]
+      images: [tableauDeBordIllust]
     },
     {
       id: 'administration',
@@ -68,7 +64,7 @@ const Fonctionnalites = () => {
         'Feuilles d\'émargement automatiques',
         'Accès rapide à toutes les fonctionnalités'
       ],
-      images: [administrationImg]
+      images: [administrationIllust]
     },
     {
       id: 'gestion-utilisateurs',
@@ -83,7 +79,7 @@ const Fonctionnalites = () => {
         'Attribution des tuteurs entreprises',
         'Filtrage par rôle et statut'
       ],
-      images: [gestionUtilisateursImg]
+      images: [gestionUtilisateursIllust]
     },
     {
       id: 'gestion-formations',
@@ -98,7 +94,7 @@ const Fonctionnalites = () => {
         'Contenu multimédia par module',
         'Sessions d\'émargement intégrées'
       ],
-      images: [gestionFormations1Img, gestionFormations2Img]
+      images: [gestionFormationsIllust]
     },
     {
       id: 'cahiers-textes',
@@ -113,7 +109,7 @@ const Fonctionnalites = () => {
         'Filtrage par formation et année',
         'Archivage des cahiers terminés'
       ],
-      images: [cahiersTextesImg, cahierTexteDetailImg]
+      images: [cahiersTextesIllust]
     },
     {
       id: 'emplois-du-temps',
@@ -128,7 +124,7 @@ const Fonctionnalites = () => {
         'Navigation par semaines de l\'année',
         'Création rapide de créneaux'
       ],
-      images: [emploisTempsImg, emploisTempsCalendrierImg]
+      images: [emploisTempsIllust]
     },
     {
       id: 'emargement',
@@ -143,7 +139,7 @@ const Fonctionnalites = () => {
         'Validation par les formateurs',
         'Historique complet des présences'
       ],
-      images: [emargement1Img, emargement2Img]
+      images: [emargementIllust]
     },
     {
       id: 'messagerie',
@@ -158,7 +154,7 @@ const Fonctionnalites = () => {
         'Transfert de messages',
         'Favoris et archivage'
       ],
-      images: [messagerie1Img, messagerie2Img]
+      images: [messagerieIllust]
     },
     {
       id: 'groupes',
@@ -173,7 +169,7 @@ const Fonctionnalites = () => {
         'Réponses aux messages',
         'Historique des conversations'
       ],
-      images: [groupesImg]
+      images: [groupesIllust]
     },
     {
       id: 'etablissement',
@@ -188,7 +184,7 @@ const Fonctionnalites = () => {
         'Type d\'établissement',
         'Nombre d\'étudiants et formateurs'
       ],
-      images: [gestionEtablissementImg]
+      images: [gestionEtablissementIllust]
     },
     {
       id: 'profils',
@@ -203,7 +199,7 @@ const Fonctionnalites = () => {
         'Informations personnelles',
         'Scanner QR pour émargement'
       ],
-      images: [profilImg]
+      images: [profilsIllust]
     },
     {
       id: 'tuteurs',
@@ -218,7 +214,7 @@ const Fonctionnalites = () => {
         'Informations de contrat',
         'Accès limité et sécurisé'
       ],
-      images: [espaceTuteursImg]
+      images: [espaceTuteursIllust]
     },
     {
       id: 'classes-virtuelles',
@@ -231,7 +227,7 @@ const Fonctionnalites = () => {
         'Enregistrement sessions',
         'Chat en direct'
       ],
-      images: [],
+      images: [classesVirtuellesIllust],
       comingSoon: true
     }
   ];
