@@ -25,25 +25,25 @@ import LandingHeader from '@/components/landing/LandingHeader';
 // Import du logo NF stylé
 import nfLogo from '@/assets/logo-nf-styled.png';
 
-// Imports des captures d'écran
-import tableauDeBordImg from '@/assets/screenshots/tableau-de-bord.png';
-import administrationImg from '@/assets/screenshots/administration.png';
-import gestionUtilisateursImg from '@/assets/screenshots/gestion-utilisateurs.png';
-import gestionFormations1Img from '@/assets/screenshots/gestion-formations-1.png';
-import gestionFormations2Img from '@/assets/screenshots/gestion-formations-2.png';
-import cahiersTextesImg from '@/assets/screenshots/cahiers-textes.png';
-import cahierTexteDetailImg from '@/assets/screenshots/cahier-texte-detail.png';
-import emploisTempsImg from '@/assets/screenshots/emplois-temps.png';
-import emploisTempsCalendrierImg from '@/assets/screenshots/emplois-temps-calendrier.png';
-import emargement1Img from '@/assets/screenshots/emargement-1.png';
-import emargement2Img from '@/assets/screenshots/emargement-2.png';
-import messagerie1Img from '@/assets/screenshots/messagerie-1.png';
-import messagerie2Img from '@/assets/screenshots/messagerie-2.png';
-import groupesImg from '@/assets/screenshots/groupes.png';
-import gestionEtablissementImg from '@/assets/screenshots/gestion-etablissement.png';
-import profilImg from '@/assets/screenshots/profil.png';
-import espaceTuteursImg from '@/assets/screenshots/espace-tuteurs.png';
-import classesVirtuellesImg from '@/assets/screenshots/classes-virtuelles.png';
+// Imports des illustrations
+import tableauDeBordImg from '@/assets/illustrations/tableau-de-bord.png';
+import administrationImg from '@/assets/illustrations/administration.png';
+import gestionUtilisateursImg from '@/assets/illustrations/gestion-utilisateurs.png';
+import gestionFormations1Img from '@/assets/illustrations/gestion-formations.png';
+const gestionFormations2Img = gestionFormations1Img;
+import cahiersTextesImg from '@/assets/illustrations/cahiers-textes.png';
+const cahierTexteDetailImg = cahiersTextesImg;
+import emploisTempsImg from '@/assets/illustrations/emplois-temps.png';
+const emploisTempsCalendrierImg = emploisTempsImg;
+import emargement1Img from '@/assets/illustrations/emargement.png';
+const emargement2Img = emargement1Img;
+import messagerie1Img from '@/assets/illustrations/messagerie.png';
+const messagerie2Img = messagerie1Img;
+import groupesImg from '@/assets/illustrations/groupes.png';
+import gestionEtablissementImg from '@/assets/illustrations/gestion-etablissement.png';
+import profilImg from '@/assets/illustrations/profils.png';
+import espaceTuteursImg from '@/assets/illustrations/espace-tuteurs.png';
+import classesVirtuellesImg from '@/assets/illustrations/classes-virtuelles.png';
 
 interface FeatureItem {
   id: string;
