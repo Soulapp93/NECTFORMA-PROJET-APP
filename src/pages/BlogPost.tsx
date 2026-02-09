@@ -12,31 +12,7 @@ import { toast } from 'sonner';
 import { getPostBySlug, trackPageView, trackScrollDepth, trackTimeOnPage, BlogPost as BlogPostType, getPublishedPosts } from '@/services/blogService';
 import logoNf from '@/assets/logo-nf.png';
 import ArticleCoverImage from '@/components/blog/ArticleCoverImage';
-
-const BlogHeader = () => (
-  <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-    <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-      <Link to="/" className="flex items-center gap-2">
-        <img src={logoNf} alt="Nectforma" className="h-8" />
-        <span className="font-semibold text-lg">Nectforma</span>
-      </Link>
-      <nav className="hidden md:flex items-center gap-6">
-        <Link to="/blog" className="text-sm font-medium text-primary transition-colors">Blog</Link>
-        <Link to="/solutions" className="text-sm font-medium hover:text-primary transition-colors">Solutions</Link>
-        <Link to="/fonctionnalites" className="text-sm font-medium hover:text-primary transition-colors">Fonctionnalités</Link>
-      </nav>
-      <div className="flex items-center gap-3">
-        <Link to="/auth">
-          <Button size="sm" variant="outline" className="hidden sm:inline-flex">Connexion</Button>
-        </Link>
-        <Link to="/auth">
-          <Button size="sm">Essai gratuit</Button>
-        </Link>
-      </div>
-    </div>
-  </header>
-);
-
+import LandingHeader from '@/components/landing/LandingHeader';
 const TableOfContents = ({ content }: { content: string }) => {
   const [headings, setHeadings] = useState<{ id: string; text: string; level: number }[]>([]);
   const [activeId, setActiveId] = useState<string>('');
@@ -212,7 +188,8 @@ const BlogPostPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <BlogHeader />
+        <LandingHeader />
+        <div className="h-14 md:h-16" />
         <div className="container mx-auto px-4 py-12 max-w-4xl">
           <Skeleton className="h-8 w-48 mb-8" />
           <Skeleton className="h-12 w-full mb-4" />
@@ -242,7 +219,8 @@ const BlogPostPage = () => {
       <meta property="og:type" content="article" />
       {post.canonical_url && <link rel="canonical" href={post.canonical_url} />}
 
-      <BlogHeader />
+      <LandingHeader />
+      <div className="h-14 md:h-16" />
 
       {/* Breadcrumb bar */}
       <div className="border-b bg-background">

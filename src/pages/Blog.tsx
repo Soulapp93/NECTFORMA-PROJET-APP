@@ -7,33 +7,8 @@ import ArticleCoverImage from '@/components/blog/ArticleCoverImage';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublishedPosts, getCategories, BlogPost, BlogCategory } from '@/services/blogService';
+import LandingHeader from '@/components/landing/LandingHeader';
 import logoNf from '@/assets/logo-nf.png';
-
-const BlogHeader = () => (
-  <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-    <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-      <Link to="/" className="flex items-center gap-2">
-        <img src={logoNf} alt="Nectforma" className="h-8" />
-        <span className="font-semibold text-lg">Nectforma</span>
-      </Link>
-      <nav className="hidden md:flex items-center gap-6">
-        <Link to="/blog" className="text-sm font-medium text-primary transition-colors">Blog</Link>
-        <Link to="/solutions" className="text-sm font-medium hover:text-primary transition-colors">Solutions</Link>
-        <Link to="/fonctionnalites" className="text-sm font-medium hover:text-primary transition-colors">Fonctionnalités</Link>
-        <Link to="/pourquoi-nous" className="text-sm font-medium hover:text-primary transition-colors">À propos</Link>
-      </nav>
-      <div className="flex items-center gap-3">
-        <Link to="/auth">
-          <Button size="sm" variant="outline" className="hidden sm:inline-flex">Connexion</Button>
-        </Link>
-        <Link to="/auth">
-          <Button size="sm">Essai gratuit</Button>
-        </Link>
-      </div>
-    </div>
-  </header>
-);
-
 const BlogFooter = () => (
   <footer className="border-t bg-muted/30 py-12 mt-16">
     <div className="container mx-auto px-4">
@@ -241,7 +216,8 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <BlogHeader />
+      <LandingHeader />
+      <div className="h-14 md:h-16" />
       
       {/* Hero Banner */}
       <section className="relative bg-gradient-to-r from-primary/90 via-primary to-primary/80 py-16 md:py-20 overflow-hidden">

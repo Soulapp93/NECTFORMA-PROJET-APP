@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, CheckCircle2, Database, Lock, Eye, FileText, Mail, Users, Cookie, AlertCircle } from 'lucide-react';
+import LandingHeader from '@/components/landing/LandingHeader';
 import AnimatedSection from '@/components/landing/AnimatedSection';
 
 const PolitiqueConfidentialite = () => {
@@ -183,29 +184,8 @@ const PolitiqueConfidentialite = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                <span className="text-primary-foreground font-bold text-sm">NF</span>
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                NECTFORMA
-              </h1>
-            </Link>
-            
-            <Link 
-              to="/auth" 
-              className="flex items-center text-muted-foreground hover:text-primary transition-colors group"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-              Retour à la connexion
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
+      <div className="h-14 md:h-16" />
 
       {/* Hero Section */}
       <section className="relative py-16 md:py-20 overflow-hidden">

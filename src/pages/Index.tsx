@@ -20,9 +20,7 @@ import Hover3DCard from '@/components/landing/Hover3DCard';
 import AnimatedButton from '@/components/landing/AnimatedButton';
 import SectionDivider from '@/components/landing/SectionDivider';
 import GradientBackground from '@/components/landing/GradientBackground';
- import MobileDrawerNavigation from '@/components/landing/MobileDrawerNavigation';
- import HeaderDropdown from '@/components/landing/HeaderDropdown';
- import { Menu } from 'lucide-react';
+import LandingHeader from '@/components/landing/LandingHeader';
 
 // Import du logo NF stylé
 import nfLogo from '@/assets/logo-nf-styled.png';
@@ -61,7 +59,7 @@ interface FeatureItem {
 
 const Index = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+   
   const features: FeatureItem[] = [
     {
       id: 'dashboard',
@@ -300,86 +298,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header - Sticky avec fond violet */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-primary via-primary to-accent shadow-lg shadow-primary/20" style={{ overflow: 'visible' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3 md:py-4">
-            <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
-               {/* Hamburger menu button - mobile only */}
-               <button
-                 onClick={() => setIsMobileMenuOpen(true)}
-                 className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 transition-colors mr-1"
-                 aria-label="Menu"
-               >
-                 <Menu className="h-5 w-5 text-white" />
-               </button>
-               
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
-                <span className="text-white font-bold text-xs md:text-sm">NF</span>
-              </div>
-              <div>
-                <h1 className="text-lg md:text-2xl font-bold text-white tracking-tight">
-                  NECTFORMA
-                </h1>
-              </div>
-            </div>
-            
-            <nav className="hidden lg:flex items-center space-x-1">
-              {/* Solution dropdown */}
-              <HeaderDropdown
-                label="Solution"
-                items={[
-                  { label: 'Tableau de bord', href: '#fonctionnalites', isAnchor: true },
-                  { label: 'Gestion des formations', href: '/fonctionnalites' },
-                  { label: 'Emplois du temps', href: '/fonctionnalites' },
-                  { label: 'Émargement digital', href: '/fonctionnalites' },
-                  { label: 'Classes virtuelles', href: '/fonctionnalites' },
-                ]}
-              />
-              {/* Fonctionnalités dropdown */}
-              <HeaderDropdown
-                label="Fonctionnalités"
-                items={[
-                  { label: 'Administration', href: '/fonctionnalites' },
-                  { label: 'Gestion des utilisateurs', href: '/fonctionnalites' },
-                  { label: 'Cahiers de texte', href: '/fonctionnalites' },
-                  { label: 'Messagerie interne', href: '/fonctionnalites' },
-                  { label: 'Groupes & Chat', href: '/fonctionnalites' },
-                  { label: 'Espace tuteurs', href: '/fonctionnalites' },
-                ]}
-              />
-              <Link to="/pourquoi-nous" className="px-4 py-2 text-white/80 hover:text-white font-medium transition-all duration-200 rounded-lg hover:bg-white/10">
-                Pourquoi nous ?
-              </Link>
-              <Link to="/blog" className="px-4 py-2 text-white/80 hover:text-white font-medium transition-all duration-200 rounded-lg hover:bg-white/10">
-                Articles & Blog
-              </Link>
-              <a 
-                href="#contact" 
-                className="px-4 py-2 text-white/80 hover:text-white font-medium transition-all duration-200 rounded-lg hover:bg-white/10"
-              >
-                Contact
-              </a>
-            </nav>
-
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <Link 
-                to="/auth" 
-                className="px-2 py-1.5 md:px-4 md:py-2 text-white/90 hover:text-white font-medium transition-all duration-300 text-sm md:text-base whitespace-nowrap hover:scale-105"
-              >
-                Se connecter
-              </Link>
-              <Link 
-                to="/create-establishment" 
-                className="hidden sm:inline-flex px-3 md:px-6 py-1.5 md:py-2 bg-white text-primary rounded-full hover:bg-white/90 hover:shadow-xl transform hover:scale-105 font-semibold transition-all duration-300 text-xs md:text-base whitespace-nowrap shadow-lg"
-              >
-                Créer un compte
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-      
+      <LandingHeader />
       {/* Spacer pour compenser le header fixed */}
       <div className="h-14 md:h-16" />
 
@@ -998,11 +917,6 @@ const Index = () => {
       <FloatingCTA />
       <ChatWidget />
        
-       {/* Mobile Navigation Drawer */}
-       <MobileDrawerNavigation 
-         isOpen={isMobileMenuOpen} 
-         onClose={() => setIsMobileMenuOpen(false)} 
-       />
     </div>
   );
 };
