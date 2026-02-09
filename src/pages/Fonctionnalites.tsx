@@ -247,17 +247,19 @@ const Fonctionnalites = () => {
       <div className="h-14 md:h-16" />
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background"></div>
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-accent/5 to-background"></div>
+        <div className="absolute top-10 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full mb-6">
+          <div className="inline-flex items-center px-5 py-2.5 bg-primary/10 rounded-full mb-8 backdrop-blur-sm border border-primary/20">
             <Sparkles className="h-4 w-4 text-primary mr-2" />
-            <span className="text-primary font-medium">13 modules complets</span>
+            <span className="text-primary font-semibold">13 modules complets</span>
           </div>
-          <h1 className="text-5xl font-bold text-foreground mb-6">
-            Toutes nos Fonctionnalités
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground mb-6 leading-tight">
+            Toutes nos <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Fonctionnalités</span>
           </h1>
-          <p className="text-xl text-muted-foreground leading-relaxed">
+          <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Découvrez l'ensemble des modules NECTFORMA pour digitaliser 
             et automatiser la gestion de votre établissement de formation.
           </p>
@@ -312,17 +314,20 @@ const Fonctionnalites = () => {
                       </div>
                     </div>
 
-                    {/* Illustration - no frame, floats directly */}
-                    <div className="flex-1 w-full flex items-center justify-center relative">
+                    {/* Illustration - rounded, floating */}
+                    <div className="flex-1 w-full flex items-center justify-center relative group">
                       {hasImages ? (
-                        <img 
-                          src={feature.images[0]} 
-                          alt={feature.title}
-                          className="w-full max-w-lg h-auto object-contain drop-shadow-xl"
-                          loading="lazy"
-                        />
+                        <div className="relative">
+                          <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                          <img 
+                            src={feature.images[0]} 
+                            alt={feature.title}
+                            className="relative w-full max-w-lg h-auto object-contain rounded-2xl drop-shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]"
+                            loading="lazy"
+                          />
+                        </div>
                       ) : (
-                        <div className="w-full max-w-lg aspect-[4/3] flex items-center justify-center">
+                        <div className="w-full max-w-lg aspect-[4/3] flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary/5 to-accent/5">
                           <Icon className="h-24 w-24 text-primary/20" />
                         </div>
                       )}
