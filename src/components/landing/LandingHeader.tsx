@@ -34,13 +34,19 @@ const LandingHeader: React.FC = () => {
               <HeaderDropdown
                 label="Fonctionnalités"
                 items={[
-                  { label: 'Tableau de bord', href: '/fonctionnalites' },
-                  { label: 'Administration', href: '/fonctionnalites' },
-                  { label: 'Gestion des formations', href: '/fonctionnalites' },
-                  { label: 'Emplois du temps', href: '/fonctionnalites' },
-                  { label: 'Émargement digital', href: '/fonctionnalites' },
-                  { label: 'Messagerie & Chat', href: '/fonctionnalites' },
-                  { label: 'Espace tuteurs', href: '/fonctionnalites' },
+                  { label: 'Tableau de bord', href: '/fonctionnalites#tableau-de-bord' },
+                  { label: 'Administration', href: '/fonctionnalites#administration' },
+                  { label: 'Gestion des utilisateurs', href: '/fonctionnalites#gestion-utilisateurs' },
+                  { label: 'Gestion des formations', href: '/fonctionnalites#gestion-formations' },
+                  { label: 'Cahiers de textes', href: '/fonctionnalites#cahiers-textes' },
+                  { label: 'Emplois du temps', href: '/fonctionnalites#emplois-du-temps' },
+                  { label: 'Émargement numérique', href: '/fonctionnalites#emargement' },
+                  { label: 'Messagerie interne', href: '/fonctionnalites#messagerie' },
+                  { label: 'Groupes de discussion', href: '/fonctionnalites#groupes' },
+                  { label: 'Gestion établissement', href: '/fonctionnalites#etablissement' },
+                  { label: 'Profils utilisateurs', href: '/fonctionnalites#profils' },
+                  { label: 'Espace tuteurs', href: '/fonctionnalites#tuteurs' },
+                  { label: 'Classes virtuelles', href: '/fonctionnalites#classes-virtuelles' },
                 ]}
               />
               <Link to="/pourquoi-nous" className="px-4 py-2 text-white/80 hover:text-white font-medium transition-all duration-200 rounded-lg hover:bg-white/10">
