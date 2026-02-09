@@ -82,7 +82,7 @@ const Solutions = () => {
         'Contenu multimédia par module',
         'Sessions d\'émargement intégrées'
       ],
-      images: [gestionFormations1Img, gestionFormations2Img]
+      images: [gestionFormations1Img]
     },
     {
       icon: BookText,
@@ -96,7 +96,7 @@ const Solutions = () => {
         'Filtrage par formation et année',
         'Archivage des cahiers terminés'
       ],
-      images: [cahiersTextesImg, cahierTexteDetailImg]
+      images: [cahiersTextesImg]
     },
     {
       icon: CalendarDays,
@@ -110,7 +110,7 @@ const Solutions = () => {
         'Navigation par semaines de l\'année',
         'Création rapide de créneaux'
       ],
-      images: [emploisTempsImg, emploisTempsCalendrierImg]
+      images: [emploisTempsImg]
     },
     {
       icon: ClipboardCheck,
@@ -124,7 +124,7 @@ const Solutions = () => {
         'Validation par les formateurs',
         'Historique complet des présences'
       ],
-      images: [emargement1Img, emargement2Img]
+      images: [emargement1Img]
     },
     {
       icon: Mail,
@@ -138,7 +138,7 @@ const Solutions = () => {
         'Transfert de messages',
         'Favoris et archivage'
       ],
-      images: [messagerie1Img, messagerie2Img]
+      images: [messagerie1Img]
     },
     {
       icon: UsersRound,
