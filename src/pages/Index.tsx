@@ -128,7 +128,7 @@ const Index = () => {
         'Corrections et notations intégrées'
       ],
       imagePlaceholder: 'formations',
-      images: [gestionFormations1Img, gestionFormations2Img]
+      images: [gestionFormations1Img]
     },
     {
       id: 'textbooks',
@@ -146,7 +146,7 @@ const Index = () => {
         'Alertes pour entrées manquantes'
       ],
       imagePlaceholder: 'textbooks',
-      images: [cahiersTextesImg, cahierTexteDetailImg]
+      images: [cahiersTextesImg]
     },
     {
       id: 'schedule',
@@ -164,7 +164,7 @@ const Index = () => {
         'Lien automatique avec émargements'
       ],
       imagePlaceholder: 'schedule',
-      images: [emploisTempsImg, emploisTempsCalendrierImg]
+      images: [emploisTempsImg]
     },
     {
       id: 'attendance',
@@ -183,7 +183,7 @@ const Index = () => {
         'Envoi de liens de signature par email'
       ],
       imagePlaceholder: 'attendance',
-      images: [emargement1Img, emargement2Img]
+      images: [emargement1Img]
     },
     {
       id: 'messaging',
@@ -201,7 +201,7 @@ const Index = () => {
         'Transfert et réponse rapide'
       ],
       imagePlaceholder: 'messaging',
-      images: [messagerie1Img, messagerie2Img]
+      images: [messagerie1Img]
     },
     {
       id: 'groups',
