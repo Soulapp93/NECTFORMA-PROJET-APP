@@ -644,6 +644,27 @@ const CreateEstablishment = () => {
                   )}
                 </div>
 
+                {/* Case RGPD */}
+                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border">
+                  <input
+                    type="checkbox"
+                    id="rgpd_consent"
+                    required
+                    className="mt-1 rounded border-primary/30 text-primary focus:ring-primary h-4 w-4"
+                  />
+                  <label htmlFor="rgpd_consent" className="text-xs text-muted-foreground leading-relaxed">
+                    J'accepte les{' '}
+                    <Link to="/cgu" target="_blank" className="text-primary hover:underline font-medium">
+                      Conditions Générales d'Utilisation
+                    </Link>{' '}
+                    et la{' '}
+                    <Link to="/politique-confidentialite" target="_blank" className="text-primary hover:underline font-medium">
+                      Politique de Confidentialité
+                    </Link>. 
+                    Je consens au traitement de mes données personnelles conformément au RGPD. <span className="text-destructive">*</span>
+                  </label>
+                </div>
+
                 <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-6 border-t border-border">
                   <Button type="button" variant="outline" onClick={handleBack} className="w-full sm:w-auto">
                     <ArrowLeft className="h-4 w-4 mr-2" />

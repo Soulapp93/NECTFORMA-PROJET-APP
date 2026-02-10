@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Shield } from 'lucide-react';
 import ProfileSettings from '../components/compte/ProfileSettings';
+import RGPDSettings from '../components/compte/RGPDSettings';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { supabase } from '@/integrations/supabase/client';
 import { fileUploadService } from '@/services/fileUploadService';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/ui/page-header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ProfileApiResponse {
   id: string;
@@ -24,7 +25,6 @@ interface ProfileApiResponse {
 const Compte = () => {
   const { userId, userRole } = useCurrentUser();
 
-  // État pour les données de profil utilisateur
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -37,7 +37,6 @@ const Compte = () => {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
 
-  // Charger les données utilisateur via la fonction RPC sécurisée
   useEffect(() => {
     const loadUserData = async () => {
       if (!userId) {
@@ -46,7 +45,6 @@ const Compte = () => {
       }
 
       try {
-        // Utiliser la fonction RPC SECURITY DEFINER pour contourner les RLS
         const { data, error } = await supabase.rpc('get_my_profile');
 
         if (error) {
@@ -85,18 +83,15 @@ const Compte = () => {
     loadUserData();
   }, [userId]);
 
-
   const handleProfilePhotoUpload = async (files: File[]) => {
     if (files.length > 0 && userId) {
       const file = files[0];
       
-      // Vérifier le type de fichier
       if (!file.type.startsWith('image/')) {
         toast.error('Veuillez sélectionner une image (JPG, PNG)');
         return;
       }
       
-      // Vérifier la taille (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('La taille de l\'image ne doit pas dépasser 5MB');
         return;
@@ -105,33 +100,23 @@ const Compte = () => {
       setIsUploadingPhoto(true);
       
       try {
-        // Uploader le fichier vers Supabase Storage avec l'ID utilisateur
         const uploadedUrl = await fileUploadService.uploadFile(file, 'avatars', userId);
         
-        console.log('Photo uploadée avec succès:', uploadedUrl);
-        
-        // Déterminer quelle table mettre à jour
         if (userRole === 'Tuteur') {
-          // Mise à jour pour les tuteurs
           const { error } = await supabase
             .from('tutors')
             .update({ profile_photo_url: uploadedUrl })
             .eq('id', userId);
-
           if (error) throw error;
         } else {
-          // Mise à jour pour les autres utilisateurs
           const { error } = await supabase
             .from('users')
             .update({ profile_photo_url: uploadedUrl })
             .eq('id', userId);
-
           if (error) throw error;
         }
         
-        // Mettre à jour l'état local APRÈS la sauvegarde en base
         setProfileData(prev => ({ ...prev, profilePhotoUrl: uploadedUrl }));
-        
         toast.success('Photo de profil mise à jour avec succès');
       } catch (error) {
         console.error('Erreur lors du téléchargement de la photo:', error);
@@ -148,26 +133,21 @@ const Compte = () => {
     setIsDeletingPhoto(true);
     
     try {
-      // Supprimer l'URL de la photo dans la base de données
       if (userRole === 'Tuteur') {
         const { error } = await supabase
           .from('tutors')
           .update({ profile_photo_url: null })
           .eq('id', userId);
-
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('users')
           .update({ profile_photo_url: null })
           .eq('id', userId);
-
         if (error) throw error;
       }
       
-      // Mettre à jour l'état local
       setProfileData(prev => ({ ...prev, profilePhotoUrl: undefined }));
-      
       toast.success('Photo de profil supprimée');
     } catch (error) {
       console.error('Erreur lors de la suppression de la photo:', error);
@@ -192,7 +172,6 @@ const Compte = () => {
 
     try {
       if (userRole === 'Tuteur') {
-        // Mise à jour pour les tuteurs
         const { error } = await supabase
           .from('tutors')
           .update({
@@ -203,10 +182,8 @@ const Compte = () => {
             profile_photo_url: profileData.profilePhotoUrl
           })
           .eq('id', userId);
-
         if (error) throw error;
       } else {
-        // Mise à jour pour les autres utilisateurs
         const { error } = await supabase
           .from('users')
           .update({
@@ -217,7 +194,6 @@ const Compte = () => {
             profile_photo_url: profileData.profilePhotoUrl
           })
           .eq('id', userId);
-
         if (error) throw error;
       }
       
@@ -243,7 +219,7 @@ const Compte = () => {
                   Mon profil
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
-                  Gérez vos informations personnelles et les paramètres de votre profil
+                  Gérez vos informations personnelles et vos données
                 </p>
               </div>
             </div>
@@ -252,18 +228,36 @@ const Compte = () => {
       </div>
 
       <div className="p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl">
+          <Tabs defaultValue="profile" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="profile" className="flex items-center gap-2">
+                <UserCircle className="h-4 w-4" />
+                Profil
+              </TabsTrigger>
+              <TabsTrigger value="rgpd" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Données & RGPD
+              </TabsTrigger>
+            </TabsList>
 
-      <div className="max-w-4xl">
-        <ProfileSettings
-          profileData={profileData}
-          onProfileDataChange={handleProfileDataChange}
-          onPhotoUpload={handleProfilePhotoUpload}
-          onPhotoDelete={handleProfilePhotoDelete}
-          onSave={handleSaveProfile}
-          isUploadingPhoto={isUploadingPhoto}
-          isDeletingPhoto={isDeletingPhoto}
-        />
-      </div>
+            <TabsContent value="profile">
+              <ProfileSettings
+                profileData={profileData}
+                onProfileDataChange={handleProfileDataChange}
+                onPhotoUpload={handleProfilePhotoUpload}
+                onPhotoDelete={handleProfilePhotoDelete}
+                onSave={handleSaveProfile}
+                isUploadingPhoto={isUploadingPhoto}
+                isDeletingPhoto={isDeletingPhoto}
+              />
+            </TabsContent>
+
+            <TabsContent value="rgpd">
+              <RGPDSettings />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

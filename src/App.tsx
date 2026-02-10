@@ -49,6 +49,7 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import BlogAdmin from './pages/BlogAdmin';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
+import CookieConsent from '@/components/CookieConsent';
 
 
 const queryClient = new QueryClient({
@@ -286,6 +287,7 @@ const AppContent = () => {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
         </Routes>
+        <CookieConsent />
       </>
     );
   }
