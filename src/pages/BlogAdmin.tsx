@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
   FileText, TrendingUp, BarChart3, Calendar, Clock,
   Globe, Folder, Send, Save, ArrowLeft, Sparkles,
   Target, Wand2, Bot, Home, ChevronDown, Check,
   CalendarPlus, CalendarCheck, KeyRound, BookOpen, ArrowRight, Eye as EyeIcon,
-  Zap
+  Zap, LogIn, LogOut
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -710,6 +711,7 @@ const SEOTab = ({ posts }: { posts: BlogPost[] }) => {
 const BlogAdmin = () => {
   const navigate = useNavigate();
   const { canManageBlog, canViewAnalytics, loading: authLoading } = useSuperAdmin();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [tags, setTags] = useState<BlogTag[]>([]);
@@ -721,6 +723,24 @@ const BlogAdmin = () => {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [activeTab, setActiveTab] = useState('posts');
+
+  // Track auth state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/blog-admin');
+  };
 
   useEffect(() => {
     if (!authLoading && !canManageBlog) {
@@ -925,6 +945,17 @@ const BlogAdmin = () => {
               <Plus className="h-4 w-4 mr-1.5" />
               Créer un article
             </Button>
+            {isLoggedIn ? (
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-1.5" />
+                Déconnexion
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
+                <LogIn className="h-4 w-4 mr-1.5" />
+                Connexion
+              </Button>
+            )}
           </div>
         </div>
       </header>
