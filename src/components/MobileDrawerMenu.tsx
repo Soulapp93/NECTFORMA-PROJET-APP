@@ -163,9 +163,11 @@ const MobileDrawerMenu: React.FC<MobileDrawerMenuProps> = ({ isOpen, onClose }) 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/20">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-bold text-base">NF</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-extrabold text-base tracking-tight">NF</span>
                 </div>
-                <h1 className="text-lg font-semibold text-white tracking-wide font-[Poppins]">NECTFORMA</h1>
+                <span className="text-lg font-bold text-white tracking-tight">
+                  Nectf<span className="text-white/70 font-extrabold">o</span>rma
+                </span>
               </div>
               
               {/* Close Button */}

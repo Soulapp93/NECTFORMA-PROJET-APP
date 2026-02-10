@@ -79,9 +79,11 @@ const Auth = () => {
         {/* Logo and brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-xl mb-4 animate-float">
-            <span className="text-primary font-bold text-2xl">NF</span>
+            <span className="text-primary font-extrabold text-2xl tracking-tight">NF</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">NECTFORMA</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Nectf<span className="text-white/70 font-extrabold">o</span>rma
+          </h1>
           <p className="text-white/70 text-sm">Plateforme de gestion éducative</p>
         </div>
 

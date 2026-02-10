@@ -430,10 +430,10 @@ const Fonctionnalites = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">NF</span>
+                <span className="text-primary-foreground font-extrabold text-sm tracking-tight">NF</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold">NECTFORMA</h3>
+                <h3 className="text-xl font-bold">Nectf<span className="text-primary font-extrabold">o</span>rma</h3>
                 <p className="text-muted-foreground text-sm">© 2024 Tous droits réservés</p>
               </div>
             </div>

@@ -162,9 +162,9 @@ const Sidebar = () => {
                 <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-extrabold text-base tracking-tight">NF</span>
               </div>
               {!collapsed && (
-                <h1 className="text-lg font-bold text-white tracking-tight">
+                <span className="text-lg font-bold text-white tracking-tight">
                   Nectf<span className="text-white/70 font-extrabold">o</span>rma
-                </h1>
+                </span>
               )}
             </div>
             

@@ -79,10 +79,10 @@ const MobileDrawerNavigation: React.FC<MobileDrawerNavigationProps> = ({ isOpen,
             
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                <span className="text-white font-bold text-xs">NF</span>
+                <span className="text-white font-extrabold text-xs tracking-tight">NF</span>
               </div>
-              <span className="text-lg font-display font-bold text-white tracking-tight">
-                NECTFORMA
+              <span className="text-lg font-bold text-white tracking-tight">
+                Nectf<span className="text-white/70 font-extrabold">o</span>rma
               </span>
             </div>
 
