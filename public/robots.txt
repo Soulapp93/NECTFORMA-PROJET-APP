@@ -12,3 +12,29 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /_/
 Disallow: /private/
+Disallow: /dashboard
+Disallow: /administration
+Disallow: /messagerie
+Disallow: /groupes
+Disallow: /emargement
+Disallow: /emploi-temps
+Disallow: /compte
+Disallow: /notifications
+Disallow: /gestion-etablissement
+Disallow: /suivi-emargement
+Disallow: /blog-admin
+Disallow: /accept-invitation
+Disallow: /reset-password
+Disallow: /activation
+
+# Allow public pages explicitly
+Allow: /
+Allow: /fonctionnalites
+Allow: /pourquoi-nous
+Allow: /blog
+Allow: /blog/*
+Allow: /create-establishment
+Allow: /documentation
+Allow: /cgu
+Allow: /politique-confidentialite
+Allow: /auth
