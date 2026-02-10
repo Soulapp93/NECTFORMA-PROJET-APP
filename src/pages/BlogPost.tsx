@@ -250,10 +250,6 @@ const BlogPostPage = () => {
           <aside className="hidden lg:block">
             <div className="sticky top-24 space-y-5">
               <TableOfContents content={post.content} />
-              <div className="bg-card rounded-2xl border border-primary/15 p-5">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Partager</h4>
-                <SocialShareButtons title={post.title} url={currentUrl} />
-              </div>
             </div>
           </aside>
 
@@ -281,10 +277,6 @@ const BlogPostPage = () => {
                 />
               </div>
 
-              {/* Mobile social share */}
-              <div className="lg:hidden px-6 md:px-10 mb-6">
-                <SocialShareButtons title={post.title} url={currentUrl} />
-              </div>
 
               {/* Content */}
               <div className="px-6 md:px-10 pb-8 md:pb-10">
