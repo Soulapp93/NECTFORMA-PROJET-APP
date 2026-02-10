@@ -343,7 +343,7 @@ const Index = () => {
               size="lg"
               icon={<Play className="h-5 w-5" />}
             >
-              Découvrir les solutions
+              Découvrir nos fonctionnalités
             </AnimatedButton>
           </AnimatedSection>
 
