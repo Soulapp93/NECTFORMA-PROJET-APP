@@ -21,7 +21,7 @@ const PourquoiNous = () => {
         'Suivi des apprenants en temps réel'
       ],
       testimonial: {
-        text: 'NECTFORMA a transformé notre gestion quotidienne. Nous avons divisé par 3 le temps administratif !',
+        text: 'Nectforma a transformé notre gestion quotidienne. Nous avons divisé par 3 le temps administratif !',
         author: 'Marie D., Directrice de CFA'
       }
     },
@@ -106,10 +106,10 @@ const PourquoiNous = () => {
             <span className="text-primary font-medium">La solution adaptée à vos besoins</span>
           </div>
           <h1 className="text-5xl font-bold text-foreground mb-6">
-            Pourquoi choisir NECTFORMA ?
+            Pourquoi choisir Nectforma ?
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            NECTFORMA s'adapte à tous les professionnels de la formation, 
+            Nectforma s'adapte à tous les professionnels de la formation, 
             quelle que soit la taille de votre structure.
           </p>
         </div>
@@ -169,7 +169,7 @@ const PourquoiNous = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-foreground mb-4">
-              Les avantages NECTFORMA
+              Les avantages Nectforma
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Plus qu'un simple logiciel, un véritable partenaire pour votre réussite
@@ -227,7 +227,7 @@ const PourquoiNous = () => {
             Prêt à simplifier votre gestion ?
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-10">
-            Testez NECTFORMA gratuitement pendant 14 jours, sans engagement
+            Testez Nectforma gratuitement pendant 14 jours, sans engagement
           </p>
           <Link 
             to="/create-establishment" 
@@ -248,10 +248,10 @@ const PourquoiNous = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">NF</span>
+                <span className="text-primary-foreground font-extrabold text-sm tracking-tight">NF</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold">NECTFORMA</h3>
+                <h3 className="text-xl font-bold">Nectf<span className="text-primary font-extrabold">o</span>rma</h3>
                 <p className="text-muted-foreground text-sm">© 2024 Tous droits réservés</p>
               </div>
             </div>

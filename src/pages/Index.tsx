@@ -879,9 +879,9 @@ const Index = () => {
             <div className="md:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">NF</span>
+                  <span className="text-primary-foreground font-extrabold text-sm tracking-tight">NF</span>
                 </div>
-                <h3 className="text-xl font-bold">NECTFORMA</h3>
+                <h3 className="text-xl font-bold">Nectf<span className="text-primary font-extrabold">o</span>rma</h3>
               </div>
               <p className="text-muted-foreground mb-4 max-w-md">
                 La plateforme complète pour digitaliser et automatiser la gestion de vos formations professionnelles.
