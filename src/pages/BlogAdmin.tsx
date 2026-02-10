@@ -956,10 +956,6 @@ const BlogAdmin = () => {
               <Calendar className="h-4 w-4" />
               Planificateur
             </TabsTrigger>
-            <TabsTrigger value="categories" className="gap-1.5">
-              <Folder className="h-4 w-4" />
-              Catégories
-            </TabsTrigger>
             <TabsTrigger value="seo" className="gap-1.5">
               <Target className="h-4 w-4" />
               SEO
@@ -1098,49 +1094,6 @@ const BlogAdmin = () => {
             </div>
           </TabsContent>
 
-          {/* Categories Tab */}
-          <TabsContent value="categories">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Catégories</CardTitle>
-                <Button size="sm" onClick={() => setShowCategoryDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle catégorie
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {categories.map(cat => {
-                    const catPostCount = posts.filter(p => p.category_id === cat.id).length;
-                    return (
-                      <Card key={cat.id}>
-                        <CardContent className="p-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="h-4 w-4 rounded-full" style={{ backgroundColor: cat.color }} />
-                            <div>
-                              <p className="font-medium">{cat.name}</p>
-                              <p className="text-xs text-muted-foreground">{catPostCount} article(s)</p>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => {
-                              if (confirm('Supprimer cette catégorie ?')) {
-                                deleteCategory(cat.id).then(loadData);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* SEO Tab */}
           <TabsContent value="seo">
