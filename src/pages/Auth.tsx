@@ -38,13 +38,10 @@ const Auth = () => {
 
       if (data.user) {
         toast.success('Connexion réussie !');
-        const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
-        if (redirectUrl) {
-          sessionStorage.removeItem('redirectAfterLogin');
-          window.location.href = redirectUrl;
-        } else {
-          window.location.href = '/dashboard';
-        }
+        // Ne PAS naviguer manuellement ici.
+        // Le hook useCurrentUser + App.tsx détecteront la session et le rôle,
+        // puis redirigeront automatiquement vers la bonne page selon le rôle.
+        // Cela évite le flash d'interface incorrecte.
       }
     } catch (err: any) {
       setError('Erreur lors de la connexion. Veuillez réessayer.');
