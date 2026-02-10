@@ -132,12 +132,21 @@ export const useCurrentUser = () => {
       }
     };
 
-    // Listener pour les changements d'authentification EN COURS (NE contrôle PAS isLoading)
+    // Listener pour les changements d'authentification EN COURS
+    // IMPORTANT: ignorer INITIAL_SESSION car initializeAuth gère déjà le chargement initial.
+    // Cela évite la race condition qui cause le flash d'interface incorrecte.
+    let initialSessionHandled = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted.current) return;
         
-        // Mettre loading à true pendant le changement
+        // Ignorer le premier événement INITIAL_SESSION - initializeAuth s'en charge
+        if (event === 'INITIAL_SESSION') {
+          initialSessionHandled = true;
+          return;
+        }
+        
+        // Pour les événements suivants (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
         setLoading(true);
         
         if (session?.user?.id) {
@@ -145,9 +154,7 @@ export const useCurrentUser = () => {
           // Déférer le fetch pour éviter les deadlocks Supabase
           setTimeout(async () => {
             if (mounted.current) {
-              // ATTENDRE que le rôle soit récupéré (avec timeout) pour éviter tout loading infini
               await fetchUserRole(session.user.id, mounted);
-              // PUIS mettre loading à false
               if (mounted.current) setLoading(false);
             }
           }, 0);
