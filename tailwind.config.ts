@@ -23,8 +23,8 @@ export default {
 		},
 		extend: {
 		fontFamily: {
-				'sans': ['Cambria', 'Georgia', 'serif'],
-				'display': ['Cambria', 'Georgia', 'serif'],
+				'sans': ['Arial', 'Helvetica', 'sans-serif'],
+				'display': ['Arial', 'Helvetica', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
