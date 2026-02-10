@@ -129,7 +129,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Listener for ONGOING auth changes (does NOT control loading on INITIAL_SESSION)
+    // Listener for ONGOING auth changes
+    // CRITICAL: Ne PAS mettre loading=true ni effacer userRole ici.
+    // Cela créait un flash où l'interface montrait le mauvais rôle.
+    // À la place, on met à jour userId immédiatement et on lance le fetch du rôle
+    // en "fire-and-forget". L'app reste sur /auth tant que userRole est null.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted.current) return;
@@ -143,18 +147,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (session?.user?.id) {
-          // Set loading=true and clear previous role ATOMICALLY to prevent flash
-          setState(prev => ({ ...prev, loading: true, userRole: null, isSuperAdmin: false }));
+          // Set userId immediately but do NOT clear userRole or set loading=true
+          // This prevents the flash of incorrect UI
+          setState(prev => ({ ...prev, userId: session.user.id }));
           
-          // Defer to avoid Supabase auth deadlocks
-          setTimeout(async () => {
-            if (mounted.current) {
-              await fetchUserRole(session.user.id, mounted);
-              if (mounted.current) {
-                setState(prev => ({ ...prev, loading: false }));
-              }
-            }
-          }, 0);
+          // Fire-and-forget role fetch - no loading state change
+          fetchUserRole(session.user.id, mounted);
         }
       }
     );

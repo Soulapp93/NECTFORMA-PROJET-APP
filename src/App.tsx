@@ -329,6 +329,19 @@ const AppContent = () => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // CRITICAL: Si userId est défini mais userRole pas encore chargé (pendant le fetch
+  // après login), afficher un spinner pour éviter le flash d'interface incorrecte
+  if (!userRole) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
+          <p className="text-muted-foreground text-sm">Chargement de votre espace...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Super Admin: rediriger vers /blog-admin (il n'a pas accès à l'interface établissement)
   if (userRole === 'SuperAdmin') {
     return <Navigate to="/blog-admin" replace />;
