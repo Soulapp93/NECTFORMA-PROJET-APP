@@ -21,11 +21,11 @@ const LandingHeader: React.FC = () => {
                 <Menu className="h-5 w-5 text-white" />
               </button>
               <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
-                <span className="text-white font-bold text-xs md:text-sm">NF</span>
+                <span className="text-white font-extrabold text-xs md:text-sm tracking-tight">NF</span>
               </div>
               <div>
                 <Link to="/" className="text-lg md:text-2xl font-bold text-white tracking-tight">
-                  NECTFORMA
+                  Nectf<span className="inline-flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-full bg-white/25 border border-white/40 text-[10px] md:text-xs font-extrabold align-middle mx-[1px]">o</span>rma
                 </Link>
               </div>
             </div>
