@@ -36,7 +36,7 @@ const MobileHeader = () => {
       }
     }
     
-    return 'NECTFORMA';
+    return 'Nectforma';
   };
 
   return (
@@ -68,7 +68,7 @@ const MobileHeader = () => {
           <div className="w-8 h-8 nect-gradient rounded-lg flex items-center justify-center shadow-sm">
             <span className="text-primary-foreground font-extrabold text-xs tracking-tight">NF</span>
           </div>
-          <h1 className="text-base font-semibold text-foreground truncate max-w-[140px]">
+          <h1 className="text-base font-bold text-foreground truncate max-w-[160px] tracking-tight">
             {getPageTitle()}
           </h1>
         </div>
