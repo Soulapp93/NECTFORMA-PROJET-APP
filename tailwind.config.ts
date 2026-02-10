@@ -23,8 +23,8 @@ export default {
 		},
 		extend: {
 		fontFamily: {
-				'sans': ['Arial', 'Helvetica', 'sans-serif'],
-				'display': ['Arial', 'Helvetica', 'sans-serif'],
+				'sans': ['"Plus Jakarta Sans"', 'Arial', 'Helvetica', 'sans-serif'],
+				'display': ['"Plus Jakarta Sans"', 'Arial', 'Helvetica', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

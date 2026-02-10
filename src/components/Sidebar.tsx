@@ -159,10 +159,12 @@ const Sidebar = () => {
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/20">
-                <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-bold text-base">NF</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent font-extrabold text-base tracking-tight">NF</span>
               </div>
               {!collapsed && (
-                <h1 className="text-lg font-semibold text-white tracking-wide font-[Poppins]">NECTFORMA</h1>
+                <h1 className="text-lg font-bold text-white tracking-tight">
+                  Nectf<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/25 border border-white/40 text-[10px] font-extrabold align-middle mx-[1px]">o</span>rma
+                </h1>
               )}
             </div>
             
