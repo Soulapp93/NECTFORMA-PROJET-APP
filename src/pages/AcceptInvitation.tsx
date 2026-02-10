@@ -380,6 +380,27 @@ export default function AcceptInvitation() {
                 )}
               </div>
 
+              {/* Case RGPD */}
+              <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="rgpd_consent"
+                  required
+                  className="mt-1 rounded border-primary/30 text-primary focus:ring-primary h-4 w-4"
+                />
+                <label htmlFor="rgpd_consent" className="text-xs text-muted-foreground leading-relaxed">
+                  J'accepte les{' '}
+                  <a href="/cgu" target="_blank" className="text-primary hover:underline font-medium">
+                    Conditions Générales d'Utilisation
+                  </a>{' '}
+                  et la{' '}
+                  <a href="/politique-confidentialite" target="_blank" className="text-primary hover:underline font-medium">
+                    Politique de Confidentialité
+                  </a>. 
+                  Je consens au traitement de mes données personnelles conformément au RGPD. <span className="text-destructive">*</span>
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full h-12 text-base font-semibold"
