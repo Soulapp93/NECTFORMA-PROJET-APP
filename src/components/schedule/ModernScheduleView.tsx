@@ -79,7 +79,7 @@ export const ModernScheduleView: React.FC<ModernScheduleViewProps> = ({
         return;
       }
 
-      const title = `Emploi du Temps - ${new Date().toLocaleDateString('fr-FR')}`;
+      const title = `Emploi du temps - ${new Date().toLocaleDateString('fr-FR')}`;
       exportScheduleToPDF(
         schedules,
         title,
@@ -129,7 +129,7 @@ export const ModernScheduleView: React.FC<ModernScheduleViewProps> = ({
                 <Calendar className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Emploi du Temps</h1>
+                <h1 className="text-2xl font-bold text-foreground">Emploi du temps</h1>
                 <p className="text-sm text-muted-foreground">Interface moderne et intuitive</p>
               </div>
             </div>

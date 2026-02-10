@@ -85,7 +85,7 @@ const CreateTextBookModal: React.FC<CreateTextBookModalProps> = ({
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
               <BookText className="h-4 w-4 text-primary-foreground" />
             </div>
-            Créer un Cahier de Texte
+            Créer un cahier de texte
           </DialogTitle>
         </DialogHeader>
         

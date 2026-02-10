@@ -31,7 +31,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
               <Calendar className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Emploi du Temps</h1>
+              <h1 className="text-3xl font-bold text-foreground">Emploi du temps</h1>
               <p className="text-muted-foreground">
                 {viewMode === 'month' 
                   ? format(currentDate, 'MMMM yyyy', { locale: fr })

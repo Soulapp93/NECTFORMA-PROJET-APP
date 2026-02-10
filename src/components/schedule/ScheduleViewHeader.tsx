@@ -43,21 +43,21 @@ export const ScheduleViewHeader: React.FC<ScheduleViewHeaderProps> = ({
   const getTitle = () => {
     // Pour les étudiants avec une formation sélectionnée, afficher le titre de la formation
     if (userRole === 'Étudiant' && formationTitle) {
-      return `Emploi du Temps – ${formationTitle}`;
+      return `Emploi du temps – ${formationTitle}`;
     }
     // Pour les tuteurs, afficher le titre de la formation de l'apprenti
     if (userRole === 'Tuteur' && formationTitle) {
-      return `Emploi du Temps – ${formationTitle}`;
+      return `Emploi du temps – ${formationTitle}`;
     }
     // Pour les admins avec une formation sélectionnée
     if ((userRole === 'Admin' || userRole === 'AdminPrincipal') && formationTitle) {
-      return `Emploi du Temps – ${formationTitle}`;
+      return `Emploi du temps – ${formationTitle}`;
     }
     // Pour les formateurs, vue globale
     if (userRole === 'Formateur') {
-      return 'Mon Emploi du Temps';
+      return 'Mon emploi du temps';
     }
-    return 'Emploi du Temps';
+    return 'Emploi du temps';
   };
 
   return (

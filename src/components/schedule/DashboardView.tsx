@@ -212,7 +212,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Tableau de Bord</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Tableau de bord</h1>
               <p className="text-muted-foreground">
                 {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
               </p>
