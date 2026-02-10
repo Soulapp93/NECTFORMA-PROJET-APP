@@ -163,7 +163,7 @@ const Sidebar = () => {
               </div>
               {!collapsed && (
                 <h1 className="text-lg font-bold text-white tracking-tight">
-                  Nectf<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/25 border border-white/40 text-[10px] font-extrabold align-middle mx-[1px]">o</span>rma
+                  Nectf<span className="text-white/70 font-extrabold">o</span>rma
                 </h1>
               )}
             </div>
