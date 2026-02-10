@@ -151,6 +151,24 @@ const AppContent = () => {
   const isActivationPage = location.pathname === '/activation';
 
   if (isAuthPage) {
+    // Si l'utilisateur est connecté et que le rôle est chargé, rediriger vers la bonne page
+    if (authLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary" />
+            <p className="text-muted-foreground text-sm">Connexion en cours...</p>
+          </div>
+        </div>
+      );
+    }
+    if (userId && userRole) {
+      if (userRole === 'SuperAdmin') {
+        return <Navigate to="/blog-admin" replace />;
+      }
+      const home = userRole === 'Admin' || userRole === 'AdminPrincipal' ? '/dashboard' : '/formations';
+      return <Navigate to={home} replace />;
+    }
     return (
       <div className="min-h-screen w-full">
         <Routes>
