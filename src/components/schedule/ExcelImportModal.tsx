@@ -67,7 +67,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
 
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Modèle Emploi du Temps');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Modèle emploi du temps');
     XLSX.writeFile(workbook, 'modele_emploi_du_temps.xlsx');
 
     toast({

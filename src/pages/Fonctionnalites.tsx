@@ -39,7 +39,7 @@ const Fonctionnalites = () => {
     {
       id: 'tableau-de-bord',
       icon: LayoutDashboard,
-      title: 'Tableau de Bord Intelligent',
+      title: 'Tableau de bord intelligent',
       description: 'Vue synthétique de votre établissement avec indicateurs clés en temps réel. Suivez l\'activité de vos formations, la présence des étudiants et les événements à venir depuis un tableau de bord centralisé et personnalisable.',
       features: [
         'Statistiques de présence en temps réel',
@@ -54,7 +54,7 @@ const Fonctionnalites = () => {
     {
       id: 'administration',
       icon: ShieldCheck,
-      title: 'Administration Centralisée',
+      title: 'Administration centralisée',
       description: 'Centre de contrôle unifié avec onglets dédiés pour chaque module. Gérez l\'ensemble de votre établissement depuis une interface unique : utilisateurs, formations, emplois du temps, émargement et cahiers de textes.',
       features: [
         'Gestion utilisateurs avec import Excel',
@@ -69,7 +69,7 @@ const Fonctionnalites = () => {
     {
       id: 'gestion-utilisateurs',
       icon: Users,
-      title: 'Gestion des Utilisateurs',
+      title: 'Gestion des utilisateurs',
       description: 'Gérez tous les profils de votre établissement avec des outils puissants. Créez des comptes individuellement ou importez-les en masse via Excel, attribuez des rôles et suivez l\'état d\'activation de chaque utilisateur.',
       features: [
         'Création individuelle ou import Excel',
@@ -84,7 +84,7 @@ const Fonctionnalites = () => {
     {
       id: 'gestion-formations',
       icon: GraduationCap,
-      title: 'Gestion des Formations',
+      title: 'Gestion des formations',
       description: 'Créez des formations structurées avec modules, devoirs et documents. Définissez les niveaux, assignez des formateurs, partagez du contenu pédagogique et suivez les soumissions des étudiants.',
       features: [
         'Structure modulaire flexible',
@@ -99,7 +99,7 @@ const Fonctionnalites = () => {
     {
       id: 'cahiers-textes',
       icon: BookText,
-      title: 'Cahiers de Textes',
+      title: 'Cahiers de textes',
       description: 'Suivi pédagogique détaillé et complet de vos formations. Chaque entrée est reliée à un créneau de l\'emploi du temps et permet de documenter le contenu du cours, les objectifs et le travail à faire.',
       features: [
         'Entrées liées aux créneaux EDT',
@@ -114,7 +114,7 @@ const Fonctionnalites = () => {
     {
       id: 'emplois-du-temps',
       icon: CalendarDays,
-      title: 'Emplois du Temps',
+      title: 'Emplois du temps',
       description: 'Planning intelligent avec navigation par semaines. Créez et gérez les emplois du temps de vos formations avec des vues multiples et un système d\'import Excel pour une mise en place rapide.',
       features: [
         'Vues jour, semaine, mois, liste',
@@ -129,7 +129,7 @@ const Fonctionnalites = () => {
     {
       id: 'emargement',
       icon: ClipboardCheck,
-      title: 'Émargement Numérique',
+      title: 'Émargement numérique',
       description: 'Signatures numériques conformes et sécurisées. Générez automatiquement les feuilles de présence, permettez la signature via QR code ou écran tactile et exportez les feuilles en PDF.',
       features: [
         'QR Code dynamique par session',
@@ -144,7 +144,7 @@ const Fonctionnalites = () => {
     {
       id: 'messagerie',
       icon: Mail,
-      title: 'Messagerie Interne',
+      title: 'Messagerie interne',
       description: 'Communication professionnelle intégrée à l\'établissement. Envoyez des messages individuels ou groupés avec pièces jointes, organisez vos échanges et retrouvez facilement vos conversations.',
       features: [
         'Messages avec pièces jointes',
@@ -159,7 +159,7 @@ const Fonctionnalites = () => {
     {
       id: 'groupes',
       icon: UsersRound,
-      title: 'Groupes de Discussion',
+      title: 'Groupes de discussion',
       description: 'Collaboration en temps réel avec votre établissement. Des groupes sont automatiquement créés par formation pour favoriser les échanges entre étudiants et formateurs.',
       features: [
         'Groupes automatiques par formation',
@@ -174,7 +174,7 @@ const Fonctionnalites = () => {
     {
       id: 'etablissement',
       icon: Building2,
-      title: 'Gestion Établissement',
+      title: 'Gestion établissement',
       description: 'Configuration et personnalisation complète de votre établissement. Renseignez vos informations légales, ajoutez votre logo et paramétrez les notifications pour tous vos utilisateurs.',
       features: [
         'Logo et identité visuelle',
@@ -189,7 +189,7 @@ const Fonctionnalites = () => {
     {
       id: 'profils',
       icon: UserCircle,
-      title: 'Profils Utilisateurs',
+      title: 'Profils utilisateurs',
       description: 'Espace personnel pour chaque utilisateur. Gérez votre photo de profil, enregistrez votre signature électronique, configurez vos préférences de notifications et scannez les QR codes d\'émargement.',
       features: [
         'Photo de profil',
@@ -204,7 +204,7 @@ const Fonctionnalites = () => {
     {
       id: 'tuteurs',
       icon: Briefcase,
-      title: 'Espace Tuteurs Entreprises',
+      title: 'Espace tuteurs entreprises',
       description: 'Suivi dédié pour les tuteurs d\'alternants. Consultez le planning et les présences de vos apprentis, communiquez avec l\'établissement et recevez des notifications en cas d\'absence.',
       features: [
         'Planning de l\'alternant',
@@ -219,7 +219,7 @@ const Fonctionnalites = () => {
     {
       id: 'classes-virtuelles',
       icon: Monitor,
-      title: 'Classes Virtuelles',
+      title: 'Classes virtuelles',
       description: 'Sessions de formation en ligne avec visioconférence intégrée. Organisez des cours à distance en HD avec partage d\'écran, enregistrement et chat en direct.',
       features: [
         'Visioconférence HD',
@@ -233,12 +233,12 @@ const Fonctionnalites = () => {
   ];
 
   const additionalFeatures = [
-    { icon: QrCode, title: 'QR Code Dynamique', description: 'Émargement rapide et sécurisé via scan mobile' },
+    { icon: QrCode, title: 'QR code dynamique', description: 'Émargement rapide et sécurisé via scan mobile' },
     { icon: Upload, title: 'Import Excel', description: 'Importez utilisateurs et plannings massivement' },
     { icon: FileDown, title: 'Export PDF', description: 'Exportez feuilles de présence et cahiers de textes' },
     { icon: Bell, title: 'Notifications', description: 'Alertes en temps réel sur les événements importants' },
-    { icon: Search, title: 'Recherche Avancée', description: 'Trouvez rapidement utilisateurs et formations' },
-    { icon: Smartphone, title: 'Mobile Responsive', description: 'Accès complet depuis tous vos appareils' },
+    { icon: Search, title: 'Recherche avancée', description: 'Trouvez rapidement utilisateurs et formations' },
+    { icon: Smartphone, title: 'Mobile responsive', description: 'Accès complet depuis tous vos appareils' },
   ];
 
   return (

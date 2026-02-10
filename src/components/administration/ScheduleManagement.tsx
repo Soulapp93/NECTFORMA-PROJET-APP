@@ -1428,7 +1428,7 @@ const ScheduleManagement = () => {
                 <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-3xl font-bold text-foreground truncate">Gestion des Emplois du Temps</h1>
+                <h1 className="text-lg sm:text-3xl font-bold text-foreground truncate">Gestion des emplois du temps</h1>
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   Créez et gérez les emplois du temps pour chaque formation
                 </p>
@@ -1442,7 +1442,7 @@ const ScheduleManagement = () => {
                 size="sm"
               >
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Créer un Emploi du Temps</span>
+                <span className="hidden sm:inline">Créer un emploi du temps</span>
                 <span className="sm:hidden">Créer</span>
               </Button>
             </div>

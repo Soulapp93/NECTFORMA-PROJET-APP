@@ -84,7 +84,7 @@ const ModernAttendanceDashboard: React.FC<AttendanceDashboardProps> = ({ userRol
       {/* Header avec actions rapides */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Tableau de Bord Émargement</h2>
+          <h2 className="text-2xl font-bold">Tableau de bord émargement</h2>
           <p className="text-muted-foreground">
             Vue d'ensemble des présences - {new Date().toLocaleDateString('fr-FR')}
           </p>

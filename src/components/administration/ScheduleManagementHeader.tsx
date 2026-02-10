@@ -37,7 +37,7 @@ export const ScheduleManagementHeader: React.FC<ScheduleManagementHeaderProps> =
     if (selectedSchedule) {
       return selectedSchedule.title;
     }
-    return 'Gestion des Emplois du Temps';
+    return 'Gestion des emplois du temps';
   };
 
   const getSubtitle = () => {

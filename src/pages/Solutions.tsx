@@ -30,7 +30,7 @@ const Solutions = () => {
   const solutions = [
     {
       icon: LayoutDashboard,
-      title: 'Tableau de Bord Intelligent',
+      title: 'Tableau de bord intelligent',
       description: 'Vue synthétique de votre établissement avec indicateurs clés en temps réel',
       features: [
         'Statistiques de présence en temps réel',
@@ -44,7 +44,7 @@ const Solutions = () => {
     },
     {
       icon: ShieldCheck,
-      title: 'Administration Centralisée',
+      title: 'Administration centralisée',
       description: 'Centre de contrôle unifié avec onglets dédiés pour chaque module',
       features: [
         'Gestion utilisateurs avec import Excel',
@@ -58,7 +58,7 @@ const Solutions = () => {
     },
     {
       icon: Users,
-      title: 'Gestion des Utilisateurs',
+      title: 'Gestion des utilisateurs',
       description: 'Gérez tous les profils de votre établissement avec des outils puissants',
       features: [
         'Création individuelle ou import Excel',
@@ -72,7 +72,7 @@ const Solutions = () => {
     },
     {
       icon: GraduationCap,
-      title: 'Gestion des Formations',
+      title: 'Gestion des formations',
       description: 'Créez des formations structurées avec modules, devoirs et documents',
       features: [
         'Structure modulaire flexible',
@@ -86,7 +86,7 @@ const Solutions = () => {
     },
     {
       icon: BookText,
-      title: 'Cahiers de Textes',
+      title: 'Cahiers de textes',
       description: 'Suivi pédagogique détaillé et complet de vos formations',
       features: [
         'Entrées liées aux créneaux EDT',
@@ -100,7 +100,7 @@ const Solutions = () => {
     },
     {
       icon: CalendarDays,
-      title: 'Emplois du Temps',
+      title: 'Emplois du temps',
       description: 'Planning intelligent avec navigation par semaines',
       features: [
         'Vues jour, semaine, mois, liste',
@@ -114,7 +114,7 @@ const Solutions = () => {
     },
     {
       icon: ClipboardCheck,
-      title: 'Émargement Numérique',
+      title: 'Émargement numérique',
       description: 'Signatures numériques conformes et sécurisées',
       features: [
         'QR Code dynamique par session',
@@ -128,7 +128,7 @@ const Solutions = () => {
     },
     {
       icon: Mail,
-      title: 'Messagerie Interne',
+      title: 'Messagerie interne',
       description: 'Communication professionnelle intégrée',
       features: [
         'Messages avec pièces jointes',
@@ -142,7 +142,7 @@ const Solutions = () => {
     },
     {
       icon: UsersRound,
-      title: 'Groupes de Discussion',
+      title: 'Groupes de discussion',
       description: 'Collaboration en temps réel avec votre établissement',
       features: [
         'Groupes automatiques par formation',
@@ -156,7 +156,7 @@ const Solutions = () => {
     },
     {
       icon: Building2,
-      title: 'Gestion Établissement',
+      title: 'Gestion établissement',
       description: 'Configuration et personnalisation de votre établissement',
       features: [
         'Logo et identité visuelle',
@@ -170,7 +170,7 @@ const Solutions = () => {
     },
     {
       icon: UserCircle,
-      title: 'Profils Utilisateurs',
+      title: 'Profils utilisateurs',
       description: 'Espace personnel pour chaque utilisateur',
       features: [
         'Photo de profil',
@@ -184,7 +184,7 @@ const Solutions = () => {
     },
     {
       icon: Briefcase,
-      title: 'Espace Tuteurs Entreprises',
+      title: 'Espace tuteurs entreprises',
       description: 'Suivi dédié pour les tuteurs d\'alternants',
       features: [
         'Planning de l\'alternant',

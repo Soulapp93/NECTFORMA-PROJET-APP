@@ -11,7 +11,7 @@ const PourquoiNous = () => {
   const audiences = [
     {
       icon: GraduationCap,
-      title: 'Centres de Formation',
+      title: 'Centres de formation',
       description: 'Vous gérez un organisme de formation et souhaitez optimiser vos processus ?',
       benefits: [
         'Gestion complète des formations et modules',
@@ -27,7 +27,7 @@ const PourquoiNous = () => {
     },
     {
       icon: Building2,
-      title: 'Établissements d\'Enseignement',
+      title: 'Établissements d\'enseignement',
       description: 'Vous êtes un établissement scolaire ou universitaire ?',
       benefits: [
         'Interface intuitive pour tous les profils',
@@ -43,7 +43,7 @@ const PourquoiNous = () => {
     },
     {
       icon: Briefcase,
-      title: 'Entreprises avec Alternants',
+      title: 'Entreprises avec alternants',
       description: 'Vous accueillez des alternants et souhaitez suivre leur formation ?',
       benefits: [
         'Espace tuteur entreprise dédié',
