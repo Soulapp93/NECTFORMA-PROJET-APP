@@ -1,0 +1,478 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const supabaseAdmin = () => createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+);
+
+// ─── STEP 1: Detect trending topics via Perplexity ───
+async function detectTrends(topics: string[]): Promise<{ topic: string; context: string; sources: string[] }> {
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!PERPLEXITY_API_KEY) throw new Error('PERPLEXITY_API_KEY not configured');
+
+  const topicsList = topics.join(', ');
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar',
+      messages: [
+        {
+          role: 'system',
+          content: 'Tu es un analyste de tendances spécialisé EdTech, formation professionnelle et SaaS éducation. Réponds TOUJOURS en JSON valide.'
+        },
+        {
+          role: 'user',
+          content: `Identifie LE sujet tendance le plus pertinent aujourd'hui pour un blog SaaS de gestion de formation (Nectforma). 
+Domaines à explorer: ${topicsList}.
+Cherche les actualités, réglementations, tendances du moment.
+
+Réponds en JSON:
+{
+  "topic": "Le sujet tendance choisi (titre d'article potentiel)",
+  "context": "Contexte détaillé (200 mots) expliquant pourquoi ce sujet est tendance et pertinent",
+  "keywords": ["mot-clé1", "mot-clé2", "mot-clé3"],
+  "angle": "L'angle éditorial recommandé"
+}`
+        }
+      ],
+      search_recency_filter: 'week',
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    console.error('Perplexity error:', response.status, err);
+    throw new Error(`Perplexity API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '';
+  const sources = data.citations || [];
+
+  // Parse JSON from response
+  let parsed;
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+  } catch {
+    parsed = { topic: content.substring(0, 100), context: content, keywords: [] };
+  }
+
+  return {
+    topic: parsed.topic || 'Formation professionnelle: tendances actuelles',
+    context: parsed.context || content,
+    sources,
+  };
+}
+
+// ─── STEP 2: Scrape additional context via Firecrawl ───
+async function scrapeContext(topic: string): Promise<string> {
+  const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!FIRECRAWL_API_KEY) {
+    console.log('Firecrawl not configured, skipping scraping');
+    return '';
+  }
+
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `${topic} formation professionnelle EdTech France`,
+        limit: 3,
+        lang: 'fr',
+        tbs: 'qdr:w', // last week
+        scrapeOptions: { formats: ['markdown'] },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Firecrawl search error:', response.status);
+      return '';
+    }
+
+    const data = await response.json();
+    const results = data.data || [];
+    return results
+      .map((r: any) => `Source: ${r.url}\n${(r.markdown || r.description || '').substring(0, 500)}`)
+      .join('\n\n---\n\n');
+  } catch (e) {
+    console.error('Firecrawl error:', e);
+    return '';
+  }
+}
+
+// ─── STEP 3: Generate article via Lovable AI ───
+async function generateArticle(topic: string, context: string, scrapedContent: string, tone: string): Promise<any> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        {
+          role: 'system',
+          content: `Tu es un rédacteur SEO expert pour Nectforma, une plateforme SaaS de gestion de formation professionnelle.
+Ton: ${tone}.
+Tu dois TOUJOURS répondre en JSON valide.`
+        },
+        {
+          role: 'user',
+          content: `Génère un article de blog complet et optimisé SEO sur ce sujet tendance:
+
+SUJET: ${topic}
+
+CONTEXTE TENDANCE:
+${context}
+
+${scrapedContent ? `SOURCES WEB RÉCENTES:\n${scrapedContent.substring(0, 2000)}` : ''}
+
+Réponds en JSON avec cette structure EXACTE:
+{
+  "title": "Titre optimisé SEO (max 60 chars)",
+  "seo_title": "Meta title (max 60 chars)",
+  "seo_description": "Meta description (max 160 chars)",
+  "slug": "url-slug-optimise",
+  "excerpt": "Résumé accrocheur (max 200 chars)",
+  "content": "<article HTML complet avec h2, h3, p, ul, li, strong, em - min 1000 mots>",
+  "seo_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "suggested_category": "Formation professionnelle",
+  "suggested_tags": ["tag1", "tag2"],
+  "social_posts": {
+    "linkedin": "Post LinkedIn professionnel (max 1500 chars) avec hashtags",
+    "twitter": "Tweet court (max 280 chars) avec hashtags",
+    "facebook": "Post Facebook engageant",
+    "instagram": "Caption Instagram avec hashtags"
+  }
+}`
+        }
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) throw new Error('Rate limit exceeded');
+    if (response.status === 402) throw new Error('Payment required');
+    const err = await response.text();
+    throw new Error(`AI generation error: ${response.status} - ${err}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '';
+
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : content);
+  } catch {
+    throw new Error('Failed to parse AI response as JSON');
+  }
+}
+
+// ─── STEP 4: Save article + social posts to DB ───
+async function saveContent(
+  article: any,
+  trendTopic: string,
+  trendSources: string[],
+  runId: string,
+  autoPublish: boolean
+) {
+  const sb = supabaseAdmin();
+
+  const generateSlug = (title: string) => {
+    const base = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    return `${base}-${Date.now().toString(36)}`;
+  };
+
+  // Get author (super admin)
+  const { data: superAdmin } = await sb
+    .from('platform_user_roles')
+    .select('user_id')
+    .eq('role', 'super_admin')
+    .limit(1)
+    .single();
+
+  const authorId = superAdmin?.user_id;
+  if (!authorId) throw new Error('No super admin found for authoring');
+
+  // Save blog post
+  const postData: any = {
+    title: article.title,
+    slug: generateSlug(article.title || 'article-auto'),
+    excerpt: article.excerpt,
+    content: article.content,
+    seo_title: article.seo_title,
+    seo_description: article.seo_description,
+    seo_keywords: article.seo_keywords || [],
+    author_id: authorId,
+    status: autoPublish ? 'published' : 'draft',
+    published_at: autoPublish ? new Date().toISOString() : null,
+  };
+
+  const { data: savedPost, error: postError } = await sb
+    .from('blog_posts')
+    .insert(postData)
+    .select()
+    .single();
+
+  if (postError) {
+    console.error('Error saving post:', postError);
+    throw postError;
+  }
+
+  console.log('Article saved:', savedPost.id, savedPost.title);
+
+  // Save social posts
+  const socialPosts = article.social_posts || {};
+  let socialCount = 0;
+  const platforms = ['linkedin', 'twitter', 'facebook', 'instagram'] as const;
+
+  for (const platform of platforms) {
+    if (socialPosts[platform]) {
+      const platformMap: Record<string, string> = {
+        linkedin: 'linkedin', twitter: 'twitter', facebook: 'facebook', instagram: 'instagram'
+      };
+
+      const { error: socialError } = await sb
+        .from('social_posts')
+        .insert({
+          blog_post_id: savedPost.id,
+          platform: platformMap[platform],
+          caption: socialPosts[platform],
+          status: 'draft',
+          ai_generated: true,
+          created_by: authorId,
+        });
+
+      if (socialError) {
+        console.error(`Error saving ${platform} post:`, socialError);
+      } else {
+        socialCount++;
+      }
+    }
+  }
+
+  // Update run with results
+  await sb
+    .from('ai_autopilot_runs')
+    .update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      trend_topic: trendTopic,
+      trend_sources: trendSources,
+      article_id: savedPost.id,
+      social_posts_generated: socialCount,
+    })
+    .eq('id', runId);
+
+  // Update last run timestamp
+  await sb
+    .from('social_publishing_settings')
+    .update({ autopilot_last_run: new Date().toISOString() })
+    .limit(1);
+
+  return { articleId: savedPost.id, socialCount };
+}
+
+// ─── MAIN HANDLER ───
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body = await req.json().catch(() => ({}));
+    const action = body.action || 'run'; // run, status, test-trends, toggle
+
+    const sb = supabaseAdmin();
+
+    // ── Toggle autopilot ──
+    if (action === 'toggle') {
+      const { enabled } = body;
+      const { data: existing } = await sb.from('social_publishing_settings').select('id').limit(1).single();
+      
+      if (existing) {
+        await sb.from('social_publishing_settings').update({
+          autopilot_enabled: enabled,
+          emergency_stop: !enabled,
+        }).eq('id', existing.id);
+      } else {
+        await sb.from('social_publishing_settings').insert({
+          autopilot_enabled: enabled,
+          emergency_stop: !enabled,
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, autopilot_enabled: enabled }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Get status ──
+    if (action === 'status') {
+      const { data: settings } = await sb.from('social_publishing_settings').select('*').limit(1).single();
+      const { data: runs } = await sb
+        .from('ai_autopilot_runs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      return new Response(
+        JSON.stringify({ success: true, settings, runs: runs || [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Test trend detection only ──
+    if (action === 'test-trends') {
+      const topics = body.topics || ['EdTech', 'Formation professionnelle', 'Digital learning'];
+      const trends = await detectTrends(topics);
+      return new Response(
+        JSON.stringify({ success: true, trends }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Update settings ──
+    if (action === 'update-settings') {
+      const { topics, tone, frequency, require_approval, auto_publish_enabled } = body;
+      const { data: existing } = await sb.from('social_publishing_settings').select('id').limit(1).single();
+      
+      const updates: any = {};
+      if (topics) updates.autopilot_topics = topics;
+      if (tone) updates.autopilot_tone = tone;
+      if (frequency) updates.autopilot_frequency = frequency;
+      if (require_approval !== undefined) updates.require_approval = require_approval;
+      if (auto_publish_enabled !== undefined) updates.auto_publish_enabled = auto_publish_enabled;
+
+      if (existing) {
+        await sb.from('social_publishing_settings').update(updates).eq('id', existing.id);
+      } else {
+        await sb.from('social_publishing_settings').insert(updates);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Full autopilot run ──
+    // Check if autopilot is enabled (unless forced)
+    if (!body.force) {
+      const { data: settings } = await sb.from('social_publishing_settings').select('autopilot_enabled, emergency_stop').limit(1).single();
+      if (settings?.emergency_stop) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Emergency stop is active' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!settings?.autopilot_enabled && action !== 'run-once') {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Autopilot is not enabled' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Create run record
+    const { data: run, error: runError } = await sb
+      .from('ai_autopilot_runs')
+      .insert({
+        run_type: 'daily_content',
+        status: 'running',
+        ai_model: 'google/gemini-3-flash-preview',
+      })
+      .select()
+      .single();
+
+    if (runError) throw runError;
+    const runId = run.id;
+
+    try {
+      // Get settings
+      const { data: settings } = await sb.from('social_publishing_settings').select('*').limit(1).single();
+      const topics = settings?.autopilot_topics || ['EdTech', 'Formation professionnelle', 'SaaS éducation'];
+      const tone = settings?.autopilot_tone || 'professionnel';
+      const autoPublish = settings?.auto_publish_enabled && !settings?.require_approval;
+
+      console.log('🚀 Autopilot run started:', runId);
+
+      // Step 1: Detect trends
+      console.log('📊 Step 1: Detecting trends...');
+      const trends = await detectTrends(topics);
+      console.log('📊 Trend detected:', trends.topic);
+
+      // Step 2: Scrape additional context
+      console.log('🔍 Step 2: Scraping context...');
+      const scrapedContent = await scrapeContext(trends.topic);
+
+      // Step 3: Generate article + social content
+      console.log('✍️ Step 3: Generating article...');
+      const article = await generateArticle(trends.topic, trends.context, scrapedContent, tone);
+      console.log('✍️ Article generated:', article.title);
+
+      // Step 4: Save to database
+      console.log('💾 Step 4: Saving content...');
+      const result = await saveContent(article, trends.topic, trends.sources, runId, !!autoPublish);
+      console.log('✅ Autopilot run completed!', result);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          runId,
+          articleId: result.articleId,
+          socialPostsGenerated: result.socialCount,
+          topic: trends.topic,
+          autoPublished: !!autoPublish,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (error) {
+      console.error('Autopilot run failed:', error);
+      await sb
+        .from('ai_autopilot_runs')
+        .update({
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+        })
+        .eq('id', runId);
+
+      return new Response(
+        JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Run failed', runId }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+  } catch (error) {
+    console.error('Content autopilot error:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.social-media]
 verify_jwt = false
+
+[functions.content-autopilot]
+verify_jwt = false
