@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_autopilot_runs: {
+        Row: {
+          ai_model: string | null
+          article_id: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          run_type: string
+          social_posts_generated: number | null
+          started_at: string
+          status: string
+          trend_sources: Json | null
+          trend_topic: string | null
+        }
+        Insert: {
+          ai_model?: string | null
+          article_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          run_type?: string
+          social_posts_generated?: number | null
+          started_at?: string
+          status?: string
+          trend_sources?: Json | null
+          trend_topic?: string | null
+        }
+        Update: {
+          ai_model?: string | null
+          article_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          run_type?: string
+          social_posts_generated?: number | null
+          started_at?: string
+          status?: string
+          trend_sources?: Json | null
+          trend_topic?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_autopilot_runs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_corrections: {
         Row: {
           corrector_id: string
@@ -1629,11 +1685,17 @@ export type Database = {
           auto_publish_platforms:
             | Database["public"]["Enums"]["social_platform"][]
             | null
+          autopilot_enabled: boolean | null
+          autopilot_frequency: string | null
+          autopilot_last_run: string | null
+          autopilot_tone: string | null
+          autopilot_topics: string[] | null
           best_posting_times: Json | null
           brand_tone: string | null
           content_rules: Json | null
           created_at: string
           default_hashtags: Json | null
+          emergency_stop: boolean | null
           forbidden_words: string[] | null
           id: string
           require_approval: boolean | null
@@ -1644,11 +1706,17 @@ export type Database = {
           auto_publish_platforms?:
             | Database["public"]["Enums"]["social_platform"][]
             | null
+          autopilot_enabled?: boolean | null
+          autopilot_frequency?: string | null
+          autopilot_last_run?: string | null
+          autopilot_tone?: string | null
+          autopilot_topics?: string[] | null
           best_posting_times?: Json | null
           brand_tone?: string | null
           content_rules?: Json | null
           created_at?: string
           default_hashtags?: Json | null
+          emergency_stop?: boolean | null
           forbidden_words?: string[] | null
           id?: string
           require_approval?: boolean | null
@@ -1659,11 +1727,17 @@ export type Database = {
           auto_publish_platforms?:
             | Database["public"]["Enums"]["social_platform"][]
             | null
+          autopilot_enabled?: boolean | null
+          autopilot_frequency?: string | null
+          autopilot_last_run?: string | null
+          autopilot_tone?: string | null
+          autopilot_topics?: string[] | null
           best_posting_times?: Json | null
           brand_tone?: string | null
           content_rules?: Json | null
           created_at?: string
           default_hashtags?: Json | null
+          emergency_stop?: boolean | null
           forbidden_words?: string[] | null
           id?: string
           require_approval?: boolean | null

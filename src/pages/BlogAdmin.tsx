@@ -5,7 +5,7 @@ import {
   Plus, Search, Filter, MoreVertical, Eye, Edit, Trash2, 
   FileText, TrendingUp, BarChart3, Calendar, Clock,
   Globe, Folder, Send, Save, ArrowLeft, Sparkles,
-  Target, Wand2, Bot, Home, ChevronDown, Check,
+  Target, Wand2, Bot, Home, ChevronDown, Check, Cpu,
   CalendarPlus, CalendarCheck, KeyRound, BookOpen, ArrowRight, Eye as EyeIcon,
   Zap, LogIn, LogOut
 } from 'lucide-react';
@@ -45,6 +45,7 @@ import { AIContentEnhancer } from '@/components/blog-admin/AIContentEnhancer';
 import { EnhancedArticleEditor } from '@/components/blog-admin/EnhancedArticleEditor';
 import { BlogCalendarView } from '@/components/blog-admin/BlogCalendarView';
 import { MonthlyArticleGenerator } from '@/components/blog-admin/MonthlyArticleGenerator';
+import { AIAutopilotPanel } from '@/components/blog-admin/AIAutopilotPanel';
 import logoNf from '@/assets/logo-nf.png';
 
 // ============================================
@@ -991,6 +992,10 @@ const BlogAdmin = () => {
               <Target className="h-4 w-4" />
               SEO
             </TabsTrigger>
+            <TabsTrigger value="autopilot" className="gap-1.5">
+              <Cpu className="h-4 w-4" />
+              Autopilot IA
+            </TabsTrigger>
             {canViewAnalytics && (
               <TabsTrigger value="analytics" className="gap-1.5">
                 <BarChart3 className="h-4 w-4" />
@@ -1129,6 +1134,11 @@ const BlogAdmin = () => {
           {/* SEO Tab */}
           <TabsContent value="seo">
             <SEOTab posts={posts} />
+          </TabsContent>
+
+          {/* Autopilot Tab */}
+          <TabsContent value="autopilot">
+            <AIAutopilotPanel onContentGenerated={loadData} />
           </TabsContent>
 
           {/* Analytics Tab */}
