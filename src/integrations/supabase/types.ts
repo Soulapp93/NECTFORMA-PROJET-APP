@@ -1567,9 +1567,13 @@ export type Database = {
       social_posts: {
         Row: {
           ai_generated: boolean | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           auto_published: boolean | null
           blog_post_id: string | null
           caption: string
+          content_type: string | null
           created_at: string
           created_by: string | null
           error_message: string | null
@@ -1583,14 +1587,22 @@ export type Database = {
           published_at: string | null
           retry_count: number | null
           scheduled_for: string | null
+          slide_count: number | null
           status: Database["public"]["Enums"]["social_post_status"]
+          structured_content: Json | null
+          thread_tweets: Json | null
           updated_at: string
+          video_script: string | null
         }
         Insert: {
           ai_generated?: boolean | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           auto_published?: boolean | null
           blog_post_id?: string | null
           caption: string
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           error_message?: string | null
@@ -1604,14 +1616,22 @@ export type Database = {
           published_at?: string | null
           retry_count?: number | null
           scheduled_for?: string | null
+          slide_count?: number | null
           status?: Database["public"]["Enums"]["social_post_status"]
+          structured_content?: Json | null
+          thread_tweets?: Json | null
           updated_at?: string
+          video_script?: string | null
         }
         Update: {
           ai_generated?: boolean | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           auto_published?: boolean | null
           blog_post_id?: string | null
           caption?: string
+          content_type?: string | null
           created_at?: string
           created_by?: string | null
           error_message?: string | null
@@ -1625,8 +1645,12 @@ export type Database = {
           published_at?: string | null
           retry_count?: number | null
           scheduled_for?: string | null
+          slide_count?: number | null
           status?: Database["public"]["Enums"]["social_post_status"]
+          structured_content?: Json | null
+          thread_tweets?: Json | null
           updated_at?: string
+          video_script?: string | null
         }
         Relationships: [
           {
