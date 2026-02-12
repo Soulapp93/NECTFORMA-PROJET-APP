@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Bot, Play, Square, RefreshCw, Settings, Clock, CheckCircle2, XCircle,
-  Zap, TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronUp
+  Zap, TrendingUp, AlertTriangle, Loader2, ChevronDown, ChevronUp,
+  Linkedin, Instagram, Twitter, Music2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { MultiChannelPreview } from './MultiChannelPreview';
 
 interface AutopilotSettings {
   autopilot_enabled: boolean;
@@ -36,6 +38,8 @@ interface AutopilotRun {
   social_posts_generated: number;
   error_message: string | null;
   ai_model: string;
+  article_id: string | null;
+  metadata: Record<string, any> | null;
 }
 
 export const AIAutopilotPanel = ({ onContentGenerated }: { onContentGenerated?: () => void }) => {
@@ -48,6 +52,7 @@ export const AIAutopilotPanel = ({ onContentGenerated }: { onContentGenerated?: 
   const [showSettings, setShowSettings] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [topicsInput, setTopicsInput] = useState('');
+  const [selectedRunArticleId, setSelectedRunArticleId] = useState<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -377,24 +382,64 @@ export const AIAutopilotPanel = ({ onContentGenerated }: { onContentGenerated?: 
             ) : (
               <div className="space-y-2">
                 {runs.map(run => (
-                  <div key={run.id} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-lg">
-                    {getStatusIcon(run.status)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">
-                        {run.trend_topic || run.run_type}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {format(new Date(run.started_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
-                        {run.social_posts_generated > 0 && ` • ${run.social_posts_generated} posts`}
-                      </p>
+                  <React.Fragment key={run.id}>
+                    <div className="flex flex-col gap-2 p-2.5 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {getStatusIcon(run.status)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">
+                            {run.trend_topic || run.run_type}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(run.started_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                            {run.social_posts_generated > 0 && ` • ${run.social_posts_generated} posts`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {run.metadata && typeof run.metadata === 'object' && (run.metadata as any).channels && (
+                            <div className="flex items-center gap-0.5">
+                              {((run.metadata as any).channels as string[]).map((ch: string) => {
+                                switch (ch) {
+                                  case 'linkedin': return <Linkedin key={ch} className="h-3 w-3 text-blue-600" />;
+                                  case 'instagram': return <Instagram key={ch} className="h-3 w-3 text-pink-500" />;
+                                  case 'tiktok': return <Music2 key={ch} className="h-3 w-3" />;
+                                  case 'twitter': return <Twitter key={ch} className="h-3 w-3 text-sky-500" />;
+                                  default: return null;
+                                }
+                              })}
+                            </div>
+                          )}
+                          <Badge
+                            variant={run.status === 'completed' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}
+                            className="text-[10px]"
+                          >
+                            {run.status === 'completed' ? 'OK' : run.status === 'failed' ? 'Erreur' : run.status}
+                          </Badge>
+                          {run.status === 'completed' && run.article_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRunArticleId(
+                                  selectedRunArticleId === run.article_id ? null : run.article_id
+                                );
+                              }}
+                            >
+                              Voir contenus
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {selectedRunArticleId === run.article_id && run.article_id && (
+                        <MultiChannelPreview
+                          articleId={run.article_id}
+                          articleTitle={run.trend_topic || undefined}
+                        />
+                      )}
                     </div>
-                    <Badge
-                      variant={run.status === 'completed' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}
-                      className="text-[10px]"
-                    >
-                      {run.status === 'completed' ? 'OK' : run.status === 'failed' ? 'Erreur' : run.status}
-                    </Badge>
-                  </div>
+                  </React.Fragment>
                 ))}
               </div>
             )}
