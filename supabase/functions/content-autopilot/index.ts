@@ -329,6 +329,111 @@ Réponds en JSON avec cette structure EXACTE:
   }
 }
 
+// ─── STEP 3b: Generate TikTok scene images via Lovable AI ───
+async function generateTikTokImages(videoScript: any, topic: string): Promise<string[]> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.log('LOVABLE_API_KEY not configured, skipping image generation');
+    return [];
+  }
+
+  const sb = supabaseAdmin();
+  const scenes = videoScript?.scenes || [];
+  if (scenes.length === 0) return [];
+
+  const imageUrls: string[] = [];
+  console.log(`🎨 Generating ${scenes.length} TikTok scene images...`);
+
+  for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
+    try {
+      const prompt = `Create a vertical 9:16 TikTok-style scene image for a professional education/EdTech video.
+Scene ${i + 1}: "${scene.text}"
+Action: "${scene.action}"
+Topic: "${topic}"
+Style: Modern, clean, vibrant colors, bold typography overlay area at bottom, professional but dynamic.
+The image should be visually striking and suitable for a short-form vertical video about professional training and education technology.
+Ultra high resolution.`;
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-3-pro-image-preview',
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`Image generation failed for scene ${i + 1}:`, response.status);
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      
+      // Check if the response contains base64 image data
+      let imageBase64: string | null = null;
+      
+      if (data.choices?.[0]?.message?.parts) {
+        for (const part of data.choices[0].message.parts) {
+          if (part.inline_data?.data) {
+            imageBase64 = part.inline_data.data;
+            break;
+          }
+        }
+      }
+      
+      // Try extracting from content if it's a data URI
+      if (!imageBase64 && typeof content === 'string') {
+        const dataUriMatch = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
+        if (dataUriMatch) {
+          imageBase64 = dataUriMatch[1];
+        }
+      }
+
+      if (imageBase64) {
+        // Convert base64 to Uint8Array and upload to storage
+        const binaryString = atob(imageBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let j = 0; j < binaryString.length; j++) {
+          bytes[j] = binaryString.charCodeAt(j);
+        }
+        
+        const fileName = `tiktok-scene-${Date.now()}-${i + 1}.png`;
+        const filePath = `tiktok/${fileName}`;
+
+        const { error: uploadError } = await sb.storage
+          .from('blog-assets')
+          .upload(filePath, bytes.buffer, {
+            contentType: 'image/png',
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error(`Upload error for scene ${i + 1}:`, uploadError);
+          continue;
+        }
+
+        const { data: publicUrl } = sb.storage.from('blog-assets').getPublicUrl(filePath);
+        imageUrls.push(publicUrl.publicUrl);
+        console.log(`✅ Scene ${i + 1} image generated and uploaded`);
+      } else {
+        console.log(`⚠️ No image data in response for scene ${i + 1}`);
+      }
+    } catch (e) {
+      console.error(`Error generating scene ${i + 1} image:`, e);
+    }
+  }
+
+  return imageUrls;
+}
+
 // ─── STEP 4: Save article + ALL social posts to DB ───
 async function saveMultiChannelContent(
   generated: any,
@@ -423,6 +528,7 @@ async function saveMultiChannelContent(
         structured_content: { carousel: d.carousel || {}, video_script: d.video_script || {} },
         video_script: JSON.stringify(d.video_script || {}),
         slide_count: d.carousel?.slides?.length || 0,
+        media_urls: d._media_urls || [],
       })
     },
     {
@@ -455,6 +561,7 @@ async function saveMultiChannelContent(
         slide_count: postPayload.slide_count,
         video_script: postPayload.video_script || null,
         thread_tweets: postPayload.thread_tweets || [],
+        media_urls: postPayload.media_urls || [],
         status: 'draft',
         approval_status: 'pending',
         ai_generated: true,
@@ -669,6 +776,19 @@ serve(async (req) => {
       console.log('✍️ Step 3: Generating multi-channel content...');
       const generated = await generateMultiChannelContent(trends.topic, trends.context, scrapedContent, tone);
       console.log('✍️ Content generated for all channels');
+
+      // Step 3b: Generate TikTok scene images
+      let tiktokImageUrls: string[] = [];
+      if (generated.tiktok?.video_script) {
+        console.log('🎬 Step 3b: Generating TikTok scene images...');
+        tiktokImageUrls = await generateTikTokImages(generated.tiktok.video_script, trends.topic);
+        console.log(`🎬 Generated ${tiktokImageUrls.length} TikTok scene images`);
+      }
+
+      // Attach media_urls to tiktok data
+      if (tiktokImageUrls.length > 0 && generated.tiktok) {
+        generated.tiktok._media_urls = tiktokImageUrls;
+      }
 
       // Step 4: Save everything to database
       console.log('💾 Step 4: Saving multi-channel content...');

@@ -212,26 +212,158 @@ const TikTokScriptPreview = ({ script, fullscreen = false }: { script: any; full
   );
 };
 
-// ─── TikTok Video Player ───
-const TikTokVideoPlayer = ({ mediaUrls }: { mediaUrls: string[] | null }) => {
-  if (!mediaUrls || mediaUrls.length === 0) return null;
-  const videoUrl = mediaUrls.find(url => url.match(/\.(mp4|webm|mov)(\?|$)/i));
-  if (!videoUrl) return null;
+// ─── TikTok Animated Scene Player ───
+const TikTokScenePlayer = ({ mediaUrls, script, fullscreen = false }: { mediaUrls: string[] | null; script: any; fullscreen?: boolean }) => {
+  const [currentScene, setCurrentScene] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  return (
-    <div className="mx-auto max-w-[340px]">
-      <div className="bg-black rounded-[2rem] p-3 shadow-2xl border-4 border-gray-800">
-        <div className="rounded-[1.5rem] overflow-hidden">
-          <video
-            src={videoUrl}
-            controls
-            className="w-full aspect-[9/16] object-cover bg-black"
-            playsInline
-          />
+  let parsed = script;
+  if (typeof script === 'string') {
+    try { parsed = JSON.parse(script); } catch { parsed = null; }
+  }
+
+  const scenes = parsed?.scenes || [];
+  const images = mediaUrls?.filter(url => url.match(/\.(png|jpg|jpeg|webp)(\?|$)/i)) || [];
+  const videoUrl = mediaUrls?.find(url => url.match(/\.(mp4|webm|mov)(\?|$)/i));
+
+  // Auto-play through scenes
+  useEffect(() => {
+    if (!isPlaying || images.length === 0) return;
+    const sceneDuration = (scenes[currentScene]?.duration_seconds || 4) * 1000;
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      elapsed += 50;
+      setProgress((elapsed / sceneDuration) * 100);
+      if (elapsed >= sceneDuration) {
+        if (currentScene < images.length - 1) {
+          setCurrentScene(prev => prev + 1);
+          elapsed = 0;
+          setProgress(0);
+        } else {
+          setIsPlaying(false);
+          setCurrentScene(0);
+          setProgress(0);
+        }
+      }
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isPlaying, currentScene, images.length, scenes]);
+
+  // If there's a real video file, use the native player
+  if (videoUrl) {
+    return (
+      <div className={`mx-auto ${fullscreen ? 'max-w-[340px]' : 'max-w-[280px]'}`}>
+        <div className="bg-black rounded-[2rem] p-3 shadow-2xl border-4 border-gray-800">
+          <div className="rounded-[1.5rem] overflow-hidden">
+            <video src={videoUrl} controls className="w-full aspect-[9/16] object-cover bg-black" playsInline />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // If there are scene images, show animated player
+  if (images.length > 0) {
+    const scene = scenes[currentScene] || {};
+    return (
+      <div className={`mx-auto ${fullscreen ? 'max-w-[340px]' : 'max-w-[280px]'}`}>
+        <div className="bg-black rounded-[2rem] p-3 shadow-2xl border-4 border-gray-800">
+          <div className="bg-black rounded-[1.5rem] overflow-hidden relative aspect-[9/16]">
+            {/* Status bar */}
+            <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 text-white/60 text-[9px]">
+              <span>9:41</span>
+              <span className="font-bold text-white text-xs">TikTok</span>
+              <span>📶 🔋</span>
+            </div>
+
+            {/* Scene image */}
+            <img
+              src={images[currentScene] || images[0]}
+              alt={`Scène ${currentScene + 1}`}
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            />
+
+            {/* Dark overlay for text */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-10" />
+
+            {/* Scene text overlay */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-4 space-y-2">
+              {scene.text && (
+                <p className="text-white text-sm font-bold drop-shadow-lg">{scene.text}</p>
+              )}
+              {scene.action && (
+                <p className="text-white/70 text-[10px] flex items-center gap-1">📹 {scene.action}</p>
+              )}
+
+              {/* Progress bars */}
+              <div className="flex gap-1 pt-2">
+                {images.map((_: string, i: number) => (
+                  <div key={i} className="flex-1 h-0.5 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white rounded-full transition-all"
+                      style={{
+                        width: i < currentScene ? '100%' : i === currentScene ? `${progress}%` : '0%'
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Scene indicator */}
+            <div className="absolute top-10 right-3 z-20">
+              <Badge className="bg-black/50 text-white border-0 text-[10px] backdrop-blur-sm">
+                {currentScene + 1}/{images.length}
+              </Badge>
+            </div>
+
+            {/* Play/Pause overlay */}
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="absolute inset-0 z-15 flex items-center justify-center"
+            >
+              {!isPlaying && (
+                <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Play className="h-8 w-8 text-white fill-white ml-1" />
+                </div>
+              )}
+            </button>
+
+            {/* Right side TikTok actions mockup */}
+            <div className="absolute right-3 bottom-20 z-20 flex flex-col items-center gap-4">
+              <div className="text-center">
+                <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">❤️</div>
+                <span className="text-[9px] text-white">12.5k</span>
+              </div>
+              <div className="text-center">
+                <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">💬</div>
+                <span className="text-[9px] text-white">845</span>
+              </div>
+              <div className="text-center">
+                <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">↗️</div>
+                <span className="text-[9px] text-white">2.1k</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation controls below */}
+        <div className="flex items-center justify-between mt-3 px-1">
+          <Button variant="ghost" size="sm" disabled={currentScene === 0} onClick={() => { setCurrentScene(p => p - 1); setIsPlaying(false); setProgress(0); }}>
+            ← Précédent
+          </Button>
+          <span className="text-xs text-muted-foreground">Scène {currentScene + 1}/{images.length}</span>
+          <Button variant="ghost" size="sm" disabled={currentScene >= images.length - 1} onClick={() => { setCurrentScene(p => p + 1); setIsPlaying(false); setProgress(0); }}>
+            Suivant →
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: no images or video available
+  return null;
 };
 
 // ─── Twitter Thread Preview ───
@@ -341,15 +473,15 @@ const ContentDetailModal = ({ post, isOpen, onClose, onApprove, onReject }: {
 
           {post.platform === 'tiktok' && (
             <>
-              {post.media_urls && post.media_urls.length > 0 && (
+              {(post.media_urls && post.media_urls.length > 0) || videoScript ? (
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <Video className="h-4 w-4" /> Vidéo générée
+                    <Video className="h-4 w-4" /> {post.media_urls && post.media_urls.length > 0 ? 'Vidéo / Scènes générées' : 'Script vidéo'}
                   </h3>
-                  <TikTokVideoPlayer mediaUrls={post.media_urls} />
+                  <TikTokScenePlayer mediaUrls={post.media_urls} script={videoScript} fullscreen />
                 </div>
-              )}
-              {videoScript && (
+              ) : null}
+              {videoScript && !(post.media_urls && post.media_urls.length > 0) && (
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <Play className="h-4 w-4" /> Script vidéo
