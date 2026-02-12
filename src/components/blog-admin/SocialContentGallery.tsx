@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Linkedin, Instagram, Twitter, Music2, Loader2, Eye,
   ChevronRight, Play, Image as ImageIcon, Hash, Filter,
-  CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, RefreshCw
+  CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, RefreshCw,
+  X, ChevronLeft, Maximize2, Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,10 +30,11 @@ interface SocialPost {
   ai_generated: boolean;
   created_at: string;
   blog_post_id: string | null;
+  media_urls: string[] | null;
 }
 
 // ─── Carousel Slide Preview (visual, like Canva) ───
-const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string }) => {
+const CarouselPreview = ({ slides, platform, fullscreen = false }: { slides: any[]; platform: string; fullscreen?: boolean }) => {
   const [current, setCurrent] = useState(0);
   if (!slides || slides.length === 0) return <p className="text-xs text-muted-foreground">Aucun slide</p>;
 
@@ -44,22 +46,22 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
 
   const aspectClass = platform === 'instagram' ? 'aspect-square' : 'aspect-[4/5]';
   const slide = slides[current];
+  const maxH = fullscreen ? 'max-h-[70vh]' : 'max-h-[420px]';
 
   return (
-    <div className="space-y-2">
-      <div className={`relative bg-gradient-to-br ${gradients[platform] || 'from-primary to-primary/80'} rounded-2xl overflow-hidden text-white ${aspectClass} max-h-[420px] flex flex-col justify-center items-center p-8`}>
-        {/* Decorative circles */}
+    <div className="space-y-3">
+      <div className={`relative bg-gradient-to-br ${gradients[platform] || 'from-primary to-primary/80'} rounded-2xl overflow-hidden text-white ${aspectClass} ${maxH} flex flex-col justify-center items-center ${fullscreen ? 'p-10' : 'p-8'}`}>
         <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/2" />
 
-        <div className="relative z-10 w-full text-center space-y-3">
+        <div className={`relative z-10 w-full text-center space-y-3 ${fullscreen ? 'text-lg' : ''}`}>
           {slide.type === 'cover' && (
             <>
               <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider mb-2">
                 {platform === 'linkedin' ? 'LinkedIn Carrousel' : platform === 'instagram' ? 'Instagram' : 'TikTok'}
               </div>
-              <h3 className="text-xl md:text-2xl font-extrabold leading-tight">{slide.title}</h3>
-              {slide.subtitle && <p className="text-sm text-white/80 font-medium">{slide.subtitle}</p>}
+              <h3 className={`${fullscreen ? 'text-3xl' : 'text-xl md:text-2xl'} font-extrabold leading-tight`}>{slide.title}</h3>
+              {slide.subtitle && <p className={`${fullscreen ? 'text-base' : 'text-sm'} text-white/80 font-medium`}>{slide.subtitle}</p>}
               {slide.content && <p className="text-xs text-white/60">{slide.content}</p>}
             </>
           )}
@@ -68,8 +70,8 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
               <div className="inline-block bg-white/20 backdrop-blur-sm rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase">
                 Slide {current + 1}
               </div>
-              <h3 className="text-lg font-bold leading-tight">{slide.title}</h3>
-              {slide.content && <p className="text-sm text-white/90">{slide.content}</p>}
+              <h3 className={`${fullscreen ? 'text-2xl' : 'text-lg'} font-bold leading-tight`}>{slide.title}</h3>
+              {slide.content && <p className={`${fullscreen ? 'text-base' : 'text-sm'} text-white/90`}>{slide.content}</p>}
               {slide.bullet_points && (
                 <ul className="space-y-2 mt-2">
                   {slide.bullet_points.map((bp: string, i: number) => (
@@ -86,14 +88,14 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
           )}
           {(slide.type === 'stat' || slide.type === 'fact') && (
             <>
-              <h3 className="text-4xl font-black">{slide.title}</h3>
-              {slide.subtitle && <p className="text-lg text-white/80 font-medium">{slide.subtitle}</p>}
+              <h3 className={`${fullscreen ? 'text-5xl' : 'text-4xl'} font-black`}>{slide.title}</h3>
+              {slide.subtitle && <p className={`${fullscreen ? 'text-xl' : 'text-lg'} text-white/80 font-medium`}>{slide.subtitle}</p>}
               {slide.content && <p className="text-sm text-white/60">{slide.content}</p>}
             </>
           )}
           {(slide.type === 'cta' || slide.type === 'result') && (
             <>
-              <h3 className="text-xl font-bold">{slide.title}</h3>
+              <h3 className={`${fullscreen ? 'text-2xl' : 'text-xl'} font-bold`}>{slide.title}</h3>
               {slide.subtitle && <p className="text-sm text-white/80">{slide.subtitle}</p>}
               <div className="inline-flex items-center gap-2 bg-white text-black rounded-full px-5 py-2.5 text-sm font-semibold mt-3 shadow-lg">
                 En savoir plus →
@@ -101,6 +103,22 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
             </>
           )}
         </div>
+
+        {/* Navigation arrows for fullscreen */}
+        {fullscreen && (
+          <>
+            {current > 0 && (
+              <button onClick={() => setCurrent(p => p - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            {current < slides.length - 1 && (
+              <button onClick={() => setCurrent(p => p + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/50 transition-colors">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
+          </>
+        )}
 
         {/* Slide dots */}
         <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
@@ -114,7 +132,6 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
         </div>
       </div>
 
-      {/* Nav */}
       <div className="flex items-center justify-between px-1">
         <Button variant="ghost" size="sm" disabled={current === 0} onClick={() => setCurrent(p => p - 1)}>
           ← Précédent
@@ -129,7 +146,7 @@ const CarouselPreview = ({ slides, platform }: { slides: any[]; platform: string
 };
 
 // ─── TikTok Video Script Preview (phone mockup) ───
-const TikTokScriptPreview = ({ script }: { script: any }) => {
+const TikTokScriptPreview = ({ script, fullscreen = false }: { script: any; fullscreen?: boolean }) => {
   if (!script) return null;
   let parsed = script;
   if (typeof script === 'string') {
@@ -137,18 +154,16 @@ const TikTokScriptPreview = ({ script }: { script: any }) => {
   }
 
   return (
-    <div className="mx-auto max-w-[280px]">
+    <div className={`mx-auto ${fullscreen ? 'max-w-[340px]' : 'max-w-[280px]'}`}>
       <div className="bg-black rounded-[2rem] p-3 shadow-2xl border-4 border-gray-800">
         <div className="bg-gradient-to-b from-gray-900 to-black rounded-[1.5rem] overflow-hidden">
-          {/* Status bar mockup */}
           <div className="flex items-center justify-between px-4 py-2 text-white/60 text-[9px]">
             <span>9:41</span>
             <span className="font-bold text-white text-xs">TikTok</span>
             <span>📶 🔋</span>
           </div>
 
-          <div className="px-4 pb-4 space-y-3 min-h-[380px] flex flex-col justify-between">
-            {/* Hook */}
+          <div className={`px-4 pb-4 space-y-3 ${fullscreen ? 'min-h-[500px]' : 'min-h-[380px]'} flex flex-col justify-between`}>
             {parsed.hook && (
               <div className="bg-gradient-to-r from-[#FE2C55] to-[#FF6B81] rounded-xl p-3 shadow-lg">
                 <p className="text-[9px] uppercase text-white/80 font-bold mb-1">🎯 Hook</p>
@@ -156,7 +171,6 @@ const TikTokScriptPreview = ({ script }: { script: any }) => {
               </div>
             )}
 
-            {/* Scenes */}
             <div className="flex-1 space-y-2">
               {parsed.scenes?.map((scene: any, i: number) => (
                 <div key={i} className="bg-white/10 backdrop-blur-sm rounded-lg p-2.5">
@@ -172,7 +186,6 @@ const TikTokScriptPreview = ({ script }: { script: any }) => {
               ))}
             </div>
 
-            {/* CTA + Music */}
             <div className="space-y-2">
               {parsed.cta && (
                 <div className="bg-[#FE2C55] rounded-full py-2 px-4 text-center">
@@ -188,7 +201,6 @@ const TikTokScriptPreview = ({ script }: { script: any }) => {
             </div>
           </div>
 
-          {/* Duration badge */}
           <div className="text-center pb-3">
             <Badge className="bg-white/10 text-white/70 border-0 text-[10px]">
               Durée : ~{parsed.total_duration_seconds || 20}s
@@ -200,12 +212,34 @@ const TikTokScriptPreview = ({ script }: { script: any }) => {
   );
 };
 
+// ─── TikTok Video Player ───
+const TikTokVideoPlayer = ({ mediaUrls }: { mediaUrls: string[] | null }) => {
+  if (!mediaUrls || mediaUrls.length === 0) return null;
+  const videoUrl = mediaUrls.find(url => url.match(/\.(mp4|webm|mov)(\?|$)/i));
+  if (!videoUrl) return null;
+
+  return (
+    <div className="mx-auto max-w-[340px]">
+      <div className="bg-black rounded-[2rem] p-3 shadow-2xl border-4 border-gray-800">
+        <div className="rounded-[1.5rem] overflow-hidden">
+          <video
+            src={videoUrl}
+            controls
+            className="w-full aspect-[9/16] object-cover bg-black"
+            playsInline
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Twitter Thread Preview ───
-const ThreadPreview = ({ tweets }: { tweets: string[] }) => {
+const ThreadPreview = ({ tweets, fullscreen = false }: { tweets: string[]; fullscreen?: boolean }) => {
   if (!tweets || tweets.length === 0) return null;
 
   return (
-    <div className="space-y-0 max-w-md mx-auto">
+    <div className={`space-y-0 ${fullscreen ? 'max-w-lg' : 'max-w-md'} mx-auto`}>
       {tweets.map((tweet, i) => (
         <div key={i} className="relative pl-10 pb-4">
           {i < tweets.length - 1 && (
@@ -220,7 +254,7 @@ const ThreadPreview = ({ tweets }: { tweets: string[] }) => {
               <span className="text-xs font-bold">Nectforma</span>
               <span className="text-[10px] text-muted-foreground">@nectforma</span>
             </div>
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">{tweet}</p>
+            <p className={`${fullscreen ? 'text-base' : 'text-sm'} whitespace-pre-wrap leading-relaxed`}>{tweet}</p>
             <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
               <span>{tweet.length}/280</span>
               <span>Tweet {i + 1}/{tweets.length}</span>
@@ -232,12 +266,159 @@ const ThreadPreview = ({ tweets }: { tweets: string[] }) => {
   );
 };
 
+// ─── Content Detail Modal ───
+const ContentDetailModal = ({ post, isOpen, onClose, onApprove, onReject }: {
+  post: SocialPost | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) => {
+  if (!post) return null;
+
+  const slides = (() => {
+    if (post.structured_content?.slides) return post.structured_content.slides;
+    if (post.structured_content?.carousel?.slides) return post.structured_content.carousel.slides;
+    return null;
+  })();
+
+  const videoScript = post.video_script || post.structured_content?.video_script || null;
+  const tweets = (() => {
+    if (!post.thread_tweets) return null;
+    if (Array.isArray(post.thread_tweets)) return post.thread_tweets as string[];
+    return null;
+  })();
+
+  const platformLabels: Record<string, string> = {
+    linkedin: 'LinkedIn',
+    instagram: 'Instagram',
+    tiktok: 'TikTok',
+    twitter: 'X (Twitter)',
+  };
+
+  const platformIcons: Record<string, React.ReactNode> = {
+    linkedin: <Linkedin className="h-5 w-5" />,
+    instagram: <Instagram className="h-5 w-5" />,
+    tiktok: <Music2 className="h-5 w-5" />,
+    twitter: <Twitter className="h-5 w-5" />,
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background border-b px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              {platformIcons[post.platform]}
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">{platformLabels[post.platform] || post.platform}</h2>
+              <p className="text-xs text-muted-foreground">
+                {format(new Date(post.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {post.approval_status === 'approved' && (
+              <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><CheckCircle2 className="h-3 w-3 mr-1" />Approuvé</Badge>
+            )}
+            {post.approval_status === 'rejected' && (
+              <Badge className="bg-destructive/10 text-destructive border-destructive/20"><XCircle className="h-3 w-3 mr-1" />Rejeté</Badge>
+            )}
+            {post.approval_status === 'pending' && (
+              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20"><Clock className="h-3 w-3 mr-1" />En attente</Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-6 space-y-6">
+          {/* Visual preview */}
+          {slides && slides.length > 0 && (
+            <CarouselPreview slides={slides} platform={post.platform} fullscreen />
+          )}
+
+          {post.platform === 'tiktok' && (
+            <>
+              {post.media_urls && post.media_urls.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Video className="h-4 w-4" /> Vidéo générée
+                  </h3>
+                  <TikTokVideoPlayer mediaUrls={post.media_urls} />
+                </div>
+              )}
+              {videoScript && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Play className="h-4 w-4" /> Script vidéo
+                  </h3>
+                  <TikTokScriptPreview script={videoScript} fullscreen />
+                </div>
+              )}
+            </>
+          )}
+
+          {tweets && post.platform === 'twitter' && (
+            <ThreadPreview tweets={tweets} fullscreen />
+          )}
+
+          {/* Caption */}
+          {post.caption && (
+            <div className="bg-muted/50 rounded-xl p-5">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Caption</p>
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{post.caption}</p>
+            </div>
+          )}
+
+          {/* Hashtags */}
+          {post.hashtags && post.hashtags.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Hashtags</p>
+              <div className="flex flex-wrap gap-1.5">
+                {post.hashtags.map((tag, i) => (
+                  <Badge key={i} variant="outline" className="text-xs">
+                    <Hash className="h-3 w-3 mr-0.5" />{tag.replace('#', '')}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        {post.approval_status === 'pending' && (
+          <div className="sticky bottom-0 bg-background border-t px-6 py-4 flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 text-destructive hover:text-destructive"
+              onClick={() => { onReject(post.id); onClose(); }}
+            >
+              <ThumbsDown className="h-4 w-4 mr-2" />
+              Rejeter
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => { onApprove(post.id); onClose(); }}
+            >
+              <ThumbsUp className="h-4 w-4 mr-2" />
+              Approuver
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ─── Main Gallery Component ───
 export const SocialContentGallery = () => {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformFilter, setPlatformFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
   const loadPosts = async () => {
     setLoading(true);
@@ -323,22 +504,6 @@ export const SocialContentGallery = () => {
     }
   };
 
-  const getSlides = (post: SocialPost) => {
-    if (post.structured_content?.slides) return post.structured_content.slides;
-    if (post.structured_content?.carousel?.slides) return post.structured_content.carousel.slides;
-    return null;
-  };
-
-  const getVideoScript = (post: SocialPost) => {
-    return post.video_script || post.structured_content?.video_script || null;
-  };
-
-  const getThreadTweets = (post: SocialPost): string[] | null => {
-    if (!post.thread_tweets) return null;
-    if (Array.isArray(post.thread_tweets)) return post.thread_tweets as string[];
-    return null;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -396,92 +561,86 @@ export const SocialContentGallery = () => {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {posts.map(post => {
-            const slides = getSlides(post);
-            const videoScript = getVideoScript(post);
-            const tweets = getThreadTweets(post);
+          {posts.map(post => (
+            <Card 
+              key={post.id} 
+              className="overflow-hidden cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all group"
+              onClick={() => setSelectedPost(post)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className={`gap-1.5 ${getPlatformColor(post.platform)}`}>
+                    {getPlatformIcon(post.platform)}
+                    {getPlatformLabel(post.platform)}
+                  </Badge>
+                  {getApprovalBadge(post.approval_status)}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {format(new Date(post.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                </p>
+              </CardHeader>
 
-            return (
-              <Card key={post.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className={`gap-1.5 ${getPlatformColor(post.platform)}`}>
-                      {getPlatformIcon(post.platform)}
-                      {getPlatformLabel(post.platform)}
-                    </Badge>
-                    {getApprovalBadge(post.approval_status)}
+              <CardContent className="space-y-4">
+                {/* Caption preview */}
+                {post.caption && (
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Caption</p>
+                    <p className="text-sm line-clamp-3 whitespace-pre-wrap">{post.caption}</p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {format(new Date(post.created_at), 'dd MMMM yyyy à HH:mm', { locale: fr })}
-                  </p>
-                </CardHeader>
+                )}
 
-                <CardContent className="space-y-4">
-                  {/* Visual Content Preview */}
-                  {slides && slides.length > 0 && (
-                    <CarouselPreview slides={slides} platform={post.platform} />
-                  )}
+                {/* Content type indicator */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {post.content_type === 'carousel' && <><ImageIcon className="h-3.5 w-3.5" /> Carrousel ({post.slide_count || '?'} slides)</>}
+                  {post.content_type === 'video_script' && <><Video className="h-3.5 w-3.5" /> Script vidéo</>}
+                  {post.content_type === 'thread' && <><Twitter className="h-3.5 w-3.5" /> Thread</>}
+                  {post.content_type === 'text' && <><Hash className="h-3.5 w-3.5" /> Texte</>}
+                </div>
 
-                  {videoScript && post.platform === 'tiktok' && (
-                    <TikTokScriptPreview script={videoScript} />
-                  )}
+                {/* View button */}
+                <div className="flex items-center justify-center pt-1">
+                  <Button variant="outline" size="sm" className="w-full gap-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Eye className="h-4 w-4" />
+                    Visualiser le contenu
+                  </Button>
+                </div>
 
-                  {tweets && post.platform === 'twitter' && (
-                    <ThreadPreview tweets={tweets} />
-                  )}
-
-                  {/* Caption */}
-                  {post.caption && (
-                    <div className="bg-muted/50 rounded-lg p-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Caption</p>
-                      <p className="text-sm line-clamp-4 whitespace-pre-wrap">{post.caption}</p>
-                    </div>
-                  )}
-
-                  {/* Hashtags */}
-                  {post.hashtags && post.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {post.hashtags.slice(0, 8).map((tag, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          <Hash className="h-2.5 w-2.5 mr-0.5" />{tag.replace('#', '')}
-                        </Badge>
-                      ))}
-                      {post.hashtags.length > 8 && (
-                        <Badge variant="outline" className="text-[10px]">
-                          +{post.hashtags.length - 8}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Approval actions */}
-                  {post.approval_status === 'pending' && (
-                    <div className="flex gap-2 pt-2 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-destructive hover:text-destructive"
-                        onClick={() => handleApproval(post.id, false)}
-                      >
-                        <ThumbsDown className="h-3 w-3 mr-1.5" />
-                        Rejeter
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => handleApproval(post.id, true)}
-                      >
-                        <ThumbsUp className="h-3 w-3 mr-1.5" />
-                        Approuver
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                {/* Approval actions */}
+                {post.approval_status === 'pending' && (
+                  <div className="flex gap-2 pt-2 border-t" onClick={e => e.stopPropagation()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-destructive hover:text-destructive"
+                      onClick={() => handleApproval(post.id, false)}
+                    >
+                      <ThumbsDown className="h-3 w-3 mr-1.5" />
+                      Rejeter
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleApproval(post.id, true)}
+                    >
+                      <ThumbsUp className="h-3 w-3 mr-1.5" />
+                      Approuver
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
+      {/* Detail Modal */}
+      <ContentDetailModal
+        post={selectedPost}
+        isOpen={!!selectedPost}
+        onClose={() => setSelectedPost(null)}
+        onApprove={(id) => handleApproval(id, true)}
+        onReject={(id) => handleApproval(id, false)}
+      />
     </div>
   );
 };
