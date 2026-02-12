@@ -7,7 +7,7 @@ import {
   Globe, Folder, Send, Save, ArrowLeft, Sparkles,
   Target, Wand2, Bot, Home, ChevronDown, Check, Cpu,
   CalendarPlus, CalendarCheck, KeyRound, BookOpen, ArrowRight, Eye as EyeIcon,
-  Zap, LogIn, LogOut
+  Zap, LogIn, LogOut, Share2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -46,6 +46,7 @@ import { EnhancedArticleEditor } from '@/components/blog-admin/EnhancedArticleEd
 import { BlogCalendarView } from '@/components/blog-admin/BlogCalendarView';
 import { MonthlyArticleGenerator } from '@/components/blog-admin/MonthlyArticleGenerator';
 import { AIAutopilotPanel } from '@/components/blog-admin/AIAutopilotPanel';
+import { SocialContentGallery } from '@/components/blog-admin/SocialContentGallery';
 import logoNf from '@/assets/logo-nf.png';
 
 // ============================================
@@ -996,6 +997,10 @@ const BlogAdmin = () => {
               <Cpu className="h-4 w-4" />
               Autopilot IA
             </TabsTrigger>
+            <TabsTrigger value="social" className="gap-1.5">
+              <Share2 className="h-4 w-4" />
+              Contenus sociaux
+            </TabsTrigger>
             {canViewAnalytics && (
               <TabsTrigger value="analytics" className="gap-1.5">
                 <BarChart3 className="h-4 w-4" />
@@ -1139,6 +1144,11 @@ const BlogAdmin = () => {
           {/* Autopilot Tab */}
           <TabsContent value="autopilot">
             <AIAutopilotPanel onContentGenerated={loadData} />
+          </TabsContent>
+
+          {/* Social Content Gallery Tab */}
+          <TabsContent value="social">
+            <SocialContentGallery />
           </TabsContent>
 
           {/* Analytics Tab */}
