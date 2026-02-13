@@ -329,11 +329,11 @@ Réponds en JSON avec cette structure EXACTE:
   }
 }
 
-// ─── STEP 3b: Generate TikTok scene images via Lovable AI ───
-async function generateTikTokImages(videoScript: any, topic: string): Promise<string[]> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    console.log('LOVABLE_API_KEY not configured, skipping image generation');
+// ─── STEP 3b: Generate TikTok video via Runway ML ───
+async function generateTikTokVideo(videoScript: any, topic: string): Promise<string[]> {
+  const RUNWAY_API_KEY = Deno.env.get('RUNWAY_API_KEY');
+  if (!RUNWAY_API_KEY) {
+    console.log('RUNWAY_API_KEY not configured, skipping video generation');
     return [];
   }
 
@@ -341,97 +341,114 @@ async function generateTikTokImages(videoScript: any, topic: string): Promise<st
   const scenes = videoScript?.scenes || [];
   if (scenes.length === 0) return [];
 
-  const imageUrls: string[] = [];
-  console.log(`🎨 Generating ${scenes.length} TikTok scene images...`);
+  // Build a prompt from the video script
+  const sceneDescriptions = scenes
+    .map((s: any, i: number) => `Scene ${i + 1} (${s.duration_seconds}s): ${s.text} - ${s.action}`)
+    .join('. ');
 
-  for (let i = 0; i < scenes.length; i++) {
-    const scene = scenes[i];
-    try {
-      const prompt = `Create a vertical 9:16 TikTok-style scene image for a professional education/EdTech video.
-Scene ${i + 1}: "${scene.text}"
-Action: "${scene.action}"
-Topic: "${topic}"
-Style: Modern, clean, vibrant colors, bold typography overlay area at bottom, professional but dynamic.
-The image should be visually striking and suitable for a short-form vertical video about professional training and education technology.
-Ultra high resolution.`;
+  const promptText = `A professional, modern, vertical 9:16 short-form video for TikTok about "${topic}". ${sceneDescriptions}. Style: Clean motion graphics, bold text overlays, vibrant colors, dynamic transitions. Professional education/EdTech theme.`;
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
+  console.log('🎬 Starting Runway ML video generation...');
+
+  try {
+    // Step 1: Create a text-to-video task
+    const createResponse = await fetch('https://api.dev.runwayml.com/v1/text_to_video', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RUNWAY_API_KEY}`,
+        'Content-Type': 'application/json',
+        'X-Runway-Version': '2024-11-06',
+      },
+      body: JSON.stringify({
+        model: 'gen4_turbo',
+        promptText: promptText,
+        ratio: '720:1280',
+        duration: 10,
+      }),
+    });
+
+    if (!createResponse.ok) {
+      const errText = await createResponse.text();
+      console.error('Runway create task error:', createResponse.status, errText);
+      return [];
+    }
+
+    const taskData = await createResponse.json();
+    const taskId = taskData.id;
+    console.log('🎬 Runway task created:', taskId);
+
+    // Step 2: Poll until completed (max 5 minutes)
+    const maxAttempts = 60;
+    const pollInterval = 5000; // 5 seconds
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+      const pollResponse = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${RUNWAY_API_KEY}`,
+          'X-Runway-Version': '2024-11-06',
         },
-        body: JSON.stringify({
-          model: 'google/gemini-3-pro-image-preview',
-          messages: [
-            { role: 'user', content: prompt }
-          ],
-        }),
       });
 
-      if (!response.ok) {
-        console.error(`Image generation failed for scene ${i + 1}:`, response.status);
+      if (!pollResponse.ok) {
+        const errText = await pollResponse.text();
+        console.error('Runway poll error:', pollResponse.status, errText);
         continue;
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      
-      // Check if the response contains base64 image data
-      let imageBase64: string | null = null;
-      
-      if (data.choices?.[0]?.message?.parts) {
-        for (const part of data.choices[0].message.parts) {
-          if (part.inline_data?.data) {
-            imageBase64 = part.inline_data.data;
-            break;
-          }
-        }
-      }
-      
-      // Try extracting from content if it's a data URI
-      if (!imageBase64 && typeof content === 'string') {
-        const dataUriMatch = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
-        if (dataUriMatch) {
-          imageBase64 = dataUriMatch[1];
-        }
-      }
+      const pollData = await pollResponse.json();
+      console.log(`🎬 Runway task status (${attempt + 1}/${maxAttempts}):`, pollData.status);
 
-      if (imageBase64) {
-        // Convert base64 to Uint8Array and upload to storage
-        const binaryString = atob(imageBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let j = 0; j < binaryString.length; j++) {
-          bytes[j] = binaryString.charCodeAt(j);
+      if (pollData.status === 'SUCCEEDED') {
+        const videoUrl = pollData.output?.[0];
+        if (!videoUrl) {
+          console.error('Runway task succeeded but no output URL');
+          return [];
         }
-        
-        const fileName = `tiktok-scene-${Date.now()}-${i + 1}.png`;
+
+        console.log('🎬 Runway video ready, downloading...');
+
+        // Step 3: Download the video and upload to storage
+        const videoResponse = await fetch(videoUrl);
+        if (!videoResponse.ok) {
+          console.error('Failed to download video from Runway');
+          return [];
+        }
+
+        const videoBuffer = await videoResponse.arrayBuffer();
+        const fileName = `tiktok-video-${Date.now()}.mp4`;
         const filePath = `tiktok/${fileName}`;
 
         const { error: uploadError } = await sb.storage
           .from('blog-assets')
-          .upload(filePath, bytes.buffer, {
-            contentType: 'image/png',
+          .upload(filePath, videoBuffer, {
+            contentType: 'video/mp4',
             upsert: true,
           });
 
         if (uploadError) {
-          console.error(`Upload error for scene ${i + 1}:`, uploadError);
-          continue;
+          console.error('Upload error:', uploadError);
+          return [];
         }
 
         const { data: publicUrl } = sb.storage.from('blog-assets').getPublicUrl(filePath);
-        imageUrls.push(publicUrl.publicUrl);
-        console.log(`✅ Scene ${i + 1} image generated and uploaded`);
-      } else {
-        console.log(`⚠️ No image data in response for scene ${i + 1}`);
+        console.log('✅ TikTok video generated and uploaded:', publicUrl.publicUrl);
+        return [publicUrl.publicUrl];
       }
-    } catch (e) {
-      console.error(`Error generating scene ${i + 1} image:`, e);
-    }
-  }
 
-  return imageUrls;
+      if (pollData.status === 'FAILED' || pollData.status === 'CANCELED') {
+        console.error('Runway task failed:', pollData.failure || pollData.failureCode);
+        return [];
+      }
+    }
+
+    console.error('Runway task timed out after polling');
+    return [];
+  } catch (e) {
+    console.error('Runway video generation error:', e);
+    return [];
+  }
 }
 
 // ─── STEP 4: Save article + ALL social posts to DB ───
@@ -777,17 +794,17 @@ serve(async (req) => {
       const generated = await generateMultiChannelContent(trends.topic, trends.context, scrapedContent, tone);
       console.log('✍️ Content generated for all channels');
 
-      // Step 3b: Generate TikTok scene images
-      let tiktokImageUrls: string[] = [];
+      // Step 3b: Generate TikTok video via Runway ML
+      let tiktokVideoUrls: string[] = [];
       if (generated.tiktok?.video_script) {
-        console.log('🎬 Step 3b: Generating TikTok scene images...');
-        tiktokImageUrls = await generateTikTokImages(generated.tiktok.video_script, trends.topic);
-        console.log(`🎬 Generated ${tiktokImageUrls.length} TikTok scene images`);
+        console.log('🎬 Step 3b: Generating TikTok video via Runway ML...');
+        tiktokVideoUrls = await generateTikTokVideo(generated.tiktok.video_script, trends.topic);
+        console.log(`🎬 Generated ${tiktokVideoUrls.length} TikTok video(s)`);
       }
 
       // Attach media_urls to tiktok data
-      if (tiktokImageUrls.length > 0 && generated.tiktok) {
-        generated.tiktok._media_urls = tiktokImageUrls;
+      if (tiktokVideoUrls.length > 0 && generated.tiktok) {
+        generated.tiktok._media_urls = tiktokVideoUrls;
       }
 
       // Step 4: Save everything to database
